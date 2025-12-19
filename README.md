@@ -2,6 +2,48 @@
 
 Chrome extension to manage your Twitch stream title, category, tags, and open an X post.
 
+---
+
+## 日本語
+
+Twitch配信のタイトル・カテゴリ・タグの管理と、X投稿画面の起動を行うChrome拡張です。
+
+### 機能
+- 配信タイトルとカテゴリの更新
+- カテゴリごとのタグ保存・適用
+- カテゴリハッシュタグ付きのX投稿文作成
+
+### 動作要件
+- Chrome/Chromium
+- 配信管理権限のあるTwitchアカウント
+
+### OAuth設定（必須）
+この拡張は `chrome.identity.launchWebAuthFlow` を使ってTwitch認証します。Twitch開発者コンソールでアプリを作成し、Client IDを `background.js` に設定してください。
+
+1. Twitch開発者コンソールでアプリを作成
+2. リダイレクトURLを `chrome.identity.getRedirectURL()` の値に設定
+   - 例: `https://<EXTENSION_ID>.chromiumapp.org/`
+3. **Client ID** を `background.js` に設定
+
+```js
+const clientId = "YOUR_TWITCH_CLIENT_ID";
+```
+
+4. 必要スコープは `channel:manage:broadcast`
+
+注: 現状は implicit flow（`response_type=token`）を使用しています。公開運用ではPKCE対応の認可コードフロー移行を推奨します。
+
+### 手動インストール
+1. `chrome://extensions` を開き、デベロッパーモードをON
+2. 「パッケージ化されていない拡張機能を読み込む」でこのフォルダを選択
+3. 拡張機能アイコンからログイン
+
+### 設定メモ
+- トークンや設定は `chrome.storage.local` に保存されます
+- Twitch Client Secretはこのリポジトリにコミットしないでください
+
+---
+
 ## Features
 - Update stream title and category
 - Manage saved tags per category
