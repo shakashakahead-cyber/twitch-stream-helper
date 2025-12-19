@@ -1,0 +1,176 @@
+{
+  "extensionName": {
+    "message": "Twitch Stream Helper",
+    "description": "The name of the extension."
+  },
+  "extensionDescription": {
+    "message": "A handy extension for managing your Twitch stream.",
+    "description": "The description of the extension."
+  },
+  "loginButton": {
+    "message": "Login",
+    "description": "Login button text."
+  },
+  "logoutButton": {
+    "message": "Logout",
+    "description": "Logout button text."
+  },
+  "streamTitleLabel": {
+    "message": "Stream Title",
+    "description": "Label for the stream title input."
+  },
+  "categoryLabel": {
+    "message": "Category",
+    "description": "Label for the category input."
+  },
+  "categorySearchPlaceholder": {
+    "message": "Search for a category",
+    "description": "Placeholder for category search input."
+  },
+  "tagsLabel": {
+    "message": "Tags",
+    "description": "Label for the tags section."
+  },
+  "newTagPlaceholder": {
+    "message": "New Tag",
+    "description": "Placeholder for the new tag input."
+  },
+  "addTagButton": {
+    "message": "Add",
+    "description": "Button to add a new tag."
+  },
+  "postToXSectionLabel": {
+    "message": "Additional Text (for X post)",
+    "description": "Label for the custom text area for X (Twitter)."
+  },
+  "customHashtagsPlaceholder": {
+    "message": "#GoingLive",
+    "description": "Placeholder for the custom hashtags textarea."
+  },
+  "includeCategoryCheckbox": {
+    "message": "Hashtag the category",
+    "description": "Checkbox to include the category as a hashtag."
+  },
+  "postToXButton": {
+    "message": "Post to X",
+    "description": "Button to post on X (Twitter)."
+  },
+  "toastTitleUpdated": {
+    "message": "Title updated.",
+    "description": "Toast message for successful title update."
+  },
+  "toastTitleUpdateFailed": {
+    "message": "Failed to update title.",
+    "description": "Toast message for failed title update."
+  },
+  "toastHistoryEmpty": {
+    "message": "No history found.",
+    "description": "Suggestion item when there is no category history."
+  },
+  "toastCategoryNotSet": {
+    "message": "Category not set",
+    "description": "Message for an unset category card."
+  },
+  "toastNewCategoryAdded": {
+    "message": "Added new category: $categoryName$",
+    "description": "Toast message when a new category is added.",
+    "placeholders": {
+      "categoryName": {
+        "content": "$1",
+        "example": "Fortnite"
+      }
+    }
+  },
+  "toastCategorySwitched": {
+    "message": "Switched category to: $categoryName$",
+    "description": "Toast message when the category is changed.",
+    "placeholders": {
+      "categoryName": {
+        "content": "$1",
+        "example": "Fortnite"
+      }
+    }
+  },
+  "toastCategoryUpdateFailed": {
+    "message": "Failed to change category.",
+    "description": "Toast message for failed category update."
+  },
+  "toastTagsUpdated": {
+    "message": "Tags updated.",
+    "description": "Toast message for successful tag update."
+  },
+  "toastTagsUpdateFailed": {
+    "message": "Failed to update tags.",
+    "description": "Toast message for failed tag update."
+  },
+  "toastXPostOpened": {
+    "message": "Opened X post screen.",
+    "description": "Toast message when X post window is opened."
+  },
+  "toastXPostFailed": {
+    "message": "Failed to post to X.",
+    "description": "Toast message for failed X post."
+  },
+  "toastLoginSuccess": {
+    "message": "Login successful.",
+    "description": "Toast message for successful login."
+  },
+  "toastLoginFailed": {
+    "message": "Login failed.",
+    "description": "Toast message for failed login."
+  },
+  "toastLogoutSuccess": {
+    "message": "Logged out.",
+    "description": "Toast message for successful logout."
+  },
+  "toastSavedTagsApplied": {
+    "message": "Applied saved tags to Twitch.",
+    "description": "Toast message when saved tags are applied."
+  },
+  "toastCurrentCategorySaved": {
+    "message": "Saved current category: $categoryName$",
+    "description": "Toast message when the current category is newly saved.",
+    "placeholders": {
+      "categoryName": {
+        "content": "$1",
+        "example": "Just Chatting"
+      }
+    }
+  },
+  "errorLoginRequired": {
+    "message": "Login required",
+    "description": "Error message when not logged in."
+  },
+  "errorTwitchApi": {
+    "message": "Twitch API Error: $status$ $text$",
+    "description": "Error from Twitch API.",
+    "placeholders": {
+      "status": { "content": "$1" },
+      "text": { "content": "$2" }
+    }
+  },
+  "errorCsrf": {
+    "message": "State mismatch (CSRF protection)",
+    "description": "Error for OAuth state mismatch."
+  },
+  "errorTokenFetch": {
+    "message": "Failed to retrieve token",
+    "description": "Error for failed token fetching."
+  },
+  "errorUserInfo": {
+    "message": "Failed to retrieve user info",
+    "description": "Error for failed user info fetching."
+  },
+  "errorGameIdRequired": {
+    "message": "gameId is required",
+    "description": "Error when gameId is missing."
+  },
+  "errorCategoryUnset": {
+    "message": "Category not set",
+    "description": "Error when trying to update tags for an unset category."
+  },
+  "errorUnknownAction": {
+    "message": "Unknown action",
+    "description": "Error for an unknown message action."
+  }
+}

@@ -1,0 +1,249 @@
+/* ==============================
+   Twitch Stream Helper - styles.css (Twitchカラー寄せ)
+   ============================== */
+
+/* 全体 */
+body {
+  font-family: sans-serif;
+  font-size: 14px;
+  margin: 10px;
+  color: #222;
+  min-width: 300px;
+  min-height: 400px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+/* ボタン共通 */
+button {
+  padding: 6px 12px;
+  margin: 4px 0;
+  border: none;
+  border-radius: 6px;
+  background-color: #9146FF; /* Twitchカラー */
+  color: white;
+  cursor: pointer;
+  font-size: 13px;
+  transition: opacity 0.2s;
+}
+button:hover {
+  opacity: 0.9;
+}
+button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* ログイン・ログアウトボタン */
+#loginTwitch,
+#logoutTwitch {
+  width: 90%;
+  max-width: 280px;
+}
+
+/* ✅ ログアウト時: ログインボタンを中央寄せ */
+body:has(#mainUI[style*="display: none"]) {
+  justify-content: center;
+}
+
+/* ✅ ログイン後のメインUI */
+#mainUI {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-top: 10px;
+  width: 100%;
+}
+
+/* 入力欄 */
+input[type="text"],
+textarea {
+  width: 100%;
+  padding: 6px;
+  border: 1px solid #ccc;
+  border-radius: 6px;
+  font-size: 13px;
+  box-sizing: border-box;
+}
+
+/* タイトルカウント */
+#titleCount {
+  font-size: 12px;
+  color: #666;
+  margin-left: 4px;
+}
+
+/* ✅ カテゴリ入力と画像を横並び */
+.category-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.category-row input {
+  flex: 1;
+  min-width: 0;
+}
+#gameThumbnail {
+  flex-shrink: 0;
+  width: 60px;
+  height: 80px;
+  border-radius: 6px;
+  object-fit: cover;
+  display: none;
+}
+
+/* サジェストリスト */
+.suggestions {
+  list-style: none;
+  margin: 4px 0 0 0;
+  padding: 0;
+  border: 1px solid #ddd;
+  border-radius: 6px;
+  max-height: 150px;
+  overflow-y: auto;
+  background: white;
+  display: none;
+  position: absolute;
+  z-index: 1000;
+  width: calc(100% - 20px);
+}
+.suggestion-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 8px;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+.suggestion-item:hover {
+  background-color: #f5f3ff; /* 淡い紫でhover */
+}
+.suggestion-thumb {
+  width: 40px;
+  height: 50px;
+  object-fit: cover;
+  border-radius: 4px;
+}
+
+/* ✅ 選択中カテゴリ（紫アクセントカード風） */
+#selectedCategory {
+  display: none;
+  align-items: center;
+  gap: 10px;
+  background: #fff;
+  border: 2px solid #9146FF; /* Twitchカラーの枠 */
+  border-radius: 12px;
+  padding: 8px 12px;
+  font-weight: 500;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.08);
+  transition: box-shadow 0.2s ease, border-color 0.2s ease;
+}
+#selectedCategory:hover {
+  box-shadow: 0 4px 10px rgba(0,0,0,0.15);
+  border-color: #772ce8; /* hover時に濃い紫 */
+}
+#selectedCategory .selected-thumb {
+  width: 36px;
+  height: 36px;
+  border-radius: 8px;
+  object-fit: cover;
+}
+#selectedCategory .selected-name {
+  flex: 1;
+  font-size: 14px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+#selectedCategory .remove-btn {
+  margin-left: auto;
+  color: #888;
+  cursor: pointer;
+  font-size: 16px;
+  transition: color 0.2s ease;
+}
+#selectedCategory .remove-btn:hover {
+  color: #e74c3c;
+}
+
+/* タグ（Twitchカラー寄せチップ） */
+#tagSection {
+  display: none;
+}
+#tagList {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 6px 0;
+}
+.tag-item {
+  background-color: #ede9fe; /* 淡い紫背景 */
+  border-radius: 16px;
+  padding: 6px 12px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  font-weight: 500;
+  color: #5b21b6; /* 濃い紫文字 */
+  box-shadow: 0 1px 2px rgba(0,0,0,0.1);
+  transition: background-color 0.2s ease, box-shadow 0.2s ease;
+}
+.tag-item:hover {
+  background-color: #ddd6fe; /* hoverで少し濃く */
+  box-shadow: 0 2px 4px rgba(0,0,0,0.15);
+}
+.tag-remove {
+  color: #7c3aed; /* デフォルトは紫 */
+  cursor: pointer;
+  font-size: 14px;
+  transition: color 0.2s ease;
+}
+.tag-remove:hover {
+  color: #e74c3c; /* hoverで赤 */
+}
+
+/* ✅ X投稿部分を縦並び */
+.post-section {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 6px;
+}
+#customHashtags {
+  resize: vertical;
+  min-height: 60px;
+}
+#postToX {
+  background-color: #1DA1F2;
+}
+
+/* ✅ トースト通知（右下固定・スライド） */
+.toast {
+  visibility: hidden;
+  min-width: 220px;
+  background-color: #333;
+  color: #fff;
+  text-align: center;
+  border-radius: 6px;
+  padding: 10px 14px;
+  position: fixed;
+  bottom: 20px;
+  right: 20px;
+  z-index: 1001;
+  opacity: 0;
+  transition: opacity 0.3s ease, transform 0.3s ease;
+  transform: translateY(20px);
+}
+.toast.show {
+  visibility: visible;
+  opacity: 0.95;
+  transform: translateY(0);
+}
+.toast.success {
+  background-color: #2ecc71;
+}
+.toast.error {
+  background-color: #e74c3c;
+}
