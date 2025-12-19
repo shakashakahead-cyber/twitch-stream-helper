@@ -166,6 +166,13 @@
     "message": "カテゴリ未設定",
     "description": "カテゴリ未設定でタグ更新しようとした際のエラー"
   },
+  "errorTagNotFound": {
+    "message": "タグが見つかりません: $tagName$",
+    "description": "タグ名からIDに変換できない場合のエラー",
+    "placeholders": {
+      "tagName": { "content": "$1" }
+    }
+  },
   "errorUnknownAction": {
     "message": "未知のアクションです",
     "description": "不明なアクションのエラー"

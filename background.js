@@ -84,6 +84,146 @@ function toHashtag(categoryName) {
     .replace(/[^\p{L}\p{N}]/gu, "");  // 文字・数字以外を削除
 }
 
+const TAG_CACHE_TTL_MS = 24 * 60 * 60 * 1000;
+let tagCatalog = null;
+let tagCatalogFetchedAt = 0;
+
+function getUiLocale() {
+  const locale = chrome.i18n && chrome.i18n.getUILanguage ? chrome.i18n.getUILanguage() : "en-us";
+  return String(locale || "en-us").toLowerCase();
+}
+
+function normalizeTagName(name) {
+  return String(name || "").trim().toLowerCase();
+}
+
+function pickLocalizedTagName(namesByLocale, locale) {
+  if (!namesByLocale) return "";
+  const normalized = String(locale || "").toLowerCase();
+  const candidates = [];
+  if (normalized) {
+    candidates.push(normalized);
+    if (normalized.includes("_")) candidates.push(normalized.replace("_", "-"));
+    if (normalized.includes("-")) candidates.push(normalized.replace("-", "_"));
+  }
+  candidates.push("en-us");
+  for (const loc of candidates) {
+    if (namesByLocale[loc]) return namesByLocale[loc];
+  }
+  const values = Object.values(namesByLocale);
+  return values.length ? values[0] : "";
+}
+
+function buildTagCatalog(rawTags) {
+  const locale = getUiLocale();
+  const byId = new Map();
+  const nameIndex = new Map();
+  const list = rawTags.map((tag) => {
+    const namesByLocale = tag.names || {};
+    const allNames = Object.values(namesByLocale).filter(Boolean);
+    const displayName = pickLocalizedTagName(namesByLocale, locale) || allNames[0] || "";
+    const entry = { id: tag.id, name: displayName, names: allNames, isAuto: Boolean(tag.isAuto) };
+    if (entry.id) byId.set(entry.id, entry);
+    for (const n of allNames) {
+      nameIndex.set(normalizeTagName(n), entry);
+    }
+    if (entry.name) {
+      nameIndex.set(normalizeTagName(entry.name), entry);
+    }
+    return entry;
+  });
+  return { list, byId, nameIndex };
+}
+
+async function fetchAllStreamTags() {
+  let after = "";
+  const tags = [];
+  do {
+    const params = new URLSearchParams({ first: "100" });
+    if (after) params.set("after", after);
+    const res = await twitchApi(`tags/streams?${params.toString()}`);
+    const data = res.data || [];
+    for (const tag of data) {
+      const id = tag.tag_id || tag.id;
+      const names = tag.localization_names || {};
+      const isAuto = Boolean(tag.is_auto);
+      if (id) tags.push({ id, names, isAuto });
+    }
+    after = res.pagination && res.pagination.cursor ? res.pagination.cursor : "";
+  } while (after);
+  return tags;
+}
+
+async function getTagCatalog() {
+  const now = Date.now();
+  if (tagCatalog && (now - tagCatalogFetchedAt) < TAG_CACHE_TTL_MS) {
+    return tagCatalog;
+  }
+  const cached = await readLocal(["tagCatalogCache"]);
+  if (cached.tagCatalogCache && (now - cached.tagCatalogCache.fetchedAt) < TAG_CACHE_TTL_MS) {
+    tagCatalog = buildTagCatalog(cached.tagCatalogCache.tags || []);
+    tagCatalogFetchedAt = cached.tagCatalogCache.fetchedAt;
+    return tagCatalog;
+  }
+  const tags = await fetchAllStreamTags();
+  tagCatalog = buildTagCatalog(tags);
+  tagCatalogFetchedAt = now;
+  await writeLocal({ tagCatalogCache: { fetchedAt: now, tags } });
+  return tagCatalog;
+}
+
+function normalizeTagEntry(tag) {
+  if (!tag) return null;
+  if (typeof tag === "string") {
+    const name = tag.trim();
+    return name ? { id: "", name } : null;
+  }
+  if (typeof tag === "object") {
+    const id = String(tag.id || tag.tag_id || "").trim();
+    const name = String(tag.name || tag.label || tag.tag || "").trim();
+    if (!id && !name) return null;
+    return { id, name };
+  }
+  return null;
+}
+
+function normalizeTagEntries(tags) {
+  if (!Array.isArray(tags)) return [];
+  return tags.map(normalizeTagEntry).filter(Boolean);
+}
+
+async function mapTags(tagEntries) {
+  if (!tagEntries.length) return { resolved: [], missing: [] };
+  const catalog = await getTagCatalog();
+  const resolved = [];
+  const missing = [];
+  for (const entry of tagEntries) {
+    if (!entry) continue;
+    if (entry.id) {
+      const found = catalog.byId.get(entry.id);
+      if (found) resolved.push({ id: found.id, name: found.name });
+      else resolved.push({ id: entry.id, name: entry.name || entry.id });
+      continue;
+    }
+    if (entry.name) {
+      const byId = catalog.byId.get(entry.name);
+      if (byId && !byId.isAuto) {
+        resolved.push({ id: byId.id, name: byId.name });
+        continue;
+      }
+      const found = catalog.nameIndex.get(normalizeTagName(entry.name));
+      if (found && !found.isAuto) resolved.push({ id: found.id, name: found.name });
+      else missing.push(entry.name);
+    }
+  }
+  return { resolved, missing };
+}
+
+function toTagIds(tags) {
+  if (!Array.isArray(tags)) return [];
+  return tags.map((tag) => (typeof tag === "string" ? tag : tag.id)).filter(Boolean);
+}
+
 // storage から token を都度復元 + 401 で破棄
 async function twitchApi(endpoint, method = "GET", body = null) {
   if (!accessToken) {
@@ -194,22 +334,22 @@ async function getSavedCategories() {
 // ---- Saved Tags ----
 async function getSavedTags(gameId) {
   if (!gameId) return []; // 空カテゴリは扱わない方針
-  return new Promise(resolve => {
-    chrome.storage.local.get(["savedTags"], (r) => {
-      const map = r.savedTags || {};
-      resolve(map[gameId] || []);
-    });
-  });
+  const data = await readLocal(["savedTags"]);
+  const map = data.savedTags || {};
+  const raw = Array.isArray(map[gameId]) ? map[gameId] : [];
+  const entries = normalizeTagEntries(raw);
+  const { resolved } = await mapTags(entries);
+  if (resolved.length !== raw.length || raw.some((t) => typeof t === "string")) {
+    await updateSavedTags(gameId, resolved);
+  }
+  return resolved;
 }
 async function updateSavedTags(gameId, tags) {
   if (!gameId) return; // 空カテゴリは扱わない方針
-  return new Promise(resolve => {
-    chrome.storage.local.get(["savedTags"], (r) => {
-      const map = r.savedTags || {};
-      map[gameId] = Array.isArray(tags) ? tags : [];
-      chrome.storage.local.set({ savedTags: map }, resolve);
-    });
-  });
+  const data = await readLocal(["savedTags"]);
+  const map = data.savedTags || {};
+  map[gameId] = Array.isArray(tags) ? tags : [];
+  await writeLocal({ savedTags: map });
 }
 
 // ---- Tag helpers ----
@@ -218,14 +358,19 @@ async function getCurrentChannelTagsFromTwitch(broadcasterId) {
     // Get Channel Information
     const ch = await twitchApi(`channels?broadcaster_id=${broadcasterId}`);
     const info = ch.data && ch.data[0];
-    if (info && Array.isArray(info.tags)) return info.tags;
+    if (info && Array.isArray(info.tags)) {
+      const entries = info.tags.map((id) => ({ id }));
+      const { resolved } = await mapTags(entries);
+      return resolved;
+    }
   } catch (_) {}
   return [];
 }
 async function applyTagsToTwitch(broadcasterId, tags) {
   try {
     // Set Channel Information (tags)
-    await twitchApi(`channels?broadcaster_id=${broadcasterId}`, "PATCH", { tags });
+    const tagIds = toTagIds(tags);
+    await twitchApi(`channels?broadcaster_id=${broadcasterId}`, "PATCH", { tags: tagIds });
     return true;
   } catch (e) {
     console.warn("タグ適用に失敗:", e?.message || e);
@@ -370,6 +515,37 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
         return;
       }
 
+      // ------ タグ検索 ------
+      else if (message.action === "searchTags") {
+        const q = String(message.query || "").trim();
+        if (!q) { sendResponse({ success: true, tags: [] }); return; }
+
+        const catalog = await getTagCatalog();
+        const qLower = q.toLowerCase();
+        const results = [];
+        for (const tag of catalog.list) {
+          if (tag.isAuto) continue;
+          if (!tag.name) continue;
+          const names = tag.names && tag.names.length ? tag.names : [tag.name];
+          let matched = false;
+          let starts = false;
+          for (const n of names) {
+            const nLower = n.toLowerCase();
+            if (nLower.startsWith(qLower)) { matched = true; starts = true; break; }
+            if (nLower.includes(qLower)) matched = true;
+          }
+          if (matched) results.push({ tag, starts });
+        }
+        results.sort((a, b) => {
+          if (a.starts !== b.starts) return a.starts ? -1 : 1;
+          return a.tag.name.localeCompare(b.tag.name);
+        });
+
+        const tags = results.slice(0, 20).map((r) => ({ id: r.tag.id, name: r.tag.name }));
+        sendResponse({ success: true, tags });
+        return;
+      }
+
       // ------ 保存済みカテゴリ履歴 ------
       else if (message.action === "getSavedCategories") {
         const arr = await getSavedCategories();
@@ -421,12 +597,20 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
 
       // ------ タグ更新（選択中カテゴリのみ即時Twitch反映） ------
       else if (message.action === "updateTags") {
-        const tags = Array.isArray(message.tags) ? message.tags : [];
+        const rawTags = Array.isArray(message.tags) ? message.tags : [];
         const gameId = message.gameId;
         // i18n
         if (!gameId) { sendResponse({ success: false, error: chrome.i18n.getMessage("errorCategoryUnset") }); return; }
 
-        await updateSavedTags(gameId, tags);
+        const entries = normalizeTagEntries(rawTags);
+        const { resolved, missing } = await mapTags(entries);
+        if (missing.length > 0) {
+          const sample = missing.slice(0, 3).join(", ");
+          sendResponse({ success: false, error: chrome.i18n.getMessage("errorTagNotFound", [sample]) });
+          return;
+        }
+
+        await updateSavedTags(gameId, resolved);
 
         await hydrateStreamState();
         let userIdForSync = currentUserId;
@@ -442,10 +626,10 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
             userIdForSync = user.id || "";
             await updateStreamState({ userId: userIdForSync, userLogin: user.login || currentUserLogin });
           }
-          const applied = await applyTagsToTwitch(userIdForSync, tags);
+          const applied = await applyTagsToTwitch(userIdForSync, resolved);
           if (!applied) syncFailed = true;
         }
-        sendResponse({ success: true, syncFailed });
+        sendResponse({ success: true, syncFailed, tags: resolved });
         return;
       }
 

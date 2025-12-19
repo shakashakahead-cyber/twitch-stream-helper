@@ -169,6 +169,13 @@
     "message": "Category not set",
     "description": "Error when trying to update tags for an unset category."
   },
+  "errorTagNotFound": {
+    "message": "Tag not found: $tagName$",
+    "description": "Error when a tag name cannot be mapped to a tag ID.",
+    "placeholders": {
+      "tagName": { "content": "$1", "example": "English" }
+    }
+  },
   "errorUnknownAction": {
     "message": "Unknown action",
     "description": "Error for an unknown message action."

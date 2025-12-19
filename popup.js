@@ -42,6 +42,7 @@ const tagSection = document.getElementById("tagSection");
 const tagList = document.getElementById("tagList");
 const newTagInput = document.getElementById("newTag");
 const addTagBtn = document.getElementById("addTag");
+const tagSuggestions = document.getElementById("tagSuggestions");
 
 const customHashtags = document.getElementById("customHashtags");
 const includeCategoryTag = document.getElementById("includeCategoryTag");
@@ -51,10 +52,13 @@ const toast = document.getElementById("toast");
 
 let currentGameId = "";
 let currentGameName = "";
+let currentTags = [];
 
 const SEARCH_DEBOUNCE_MS = 250;
 let searchTimer = null;
 let searchSeq = 0;
+let tagSearchTimer = null;
+let tagSearchSeq = 0;
 
 // ---- toast ----
 function showToast(message, type = "success") {
@@ -195,6 +199,27 @@ function closeSuggestions() {
   gameSuggestions.style.display = "none";
 }
 
+function normalizeTagEntry(tag) {
+  if (!tag) return null;
+  if (typeof tag === "string") {
+    const name = tag.trim();
+    return name ? { id: "", name } : null;
+  }
+  if (typeof tag === "object") {
+    const id = String(tag.id || tag.tag_id || "").trim();
+    let name = String(tag.name || tag.label || tag.tag || "").trim();
+    if (!name && id) name = id;
+    if (!id && !name) return null;
+    return { id, name };
+  }
+  return null;
+}
+
+function normalizeTagList(tags) {
+  if (!Array.isArray(tags)) return [];
+  return tags.map(normalizeTagEntry).filter((t) => t && t.name);
+}
+
 function requestSavedCategories() {
   const seq = ++searchSeq;
   chrome.runtime.sendMessage({ action: "getSavedCategories" }, (res) => {
@@ -237,16 +262,73 @@ gameInput.addEventListener("focus", () => {
   }
 });
 
-// ---- tags ----
-function renderTags(tags) {
-  tagList.innerHTML = "";
-  tagSection.style.display = "block";
-  if (!Array.isArray(tags) || tags.length === 0) return;
+function renderTagSuggestions(tags) {
+  tagSuggestions.innerHTML = "";
+  if (!Array.isArray(tags) || tags.length === 0) {
+    closeTagSuggestions();
+    return;
+  }
 
   tags.forEach((tag) => {
+    if (!tag || !tag.name) return;
+    const li = document.createElement("li");
+    li.className = "suggestion-item";
+    li.textContent = tag.name || "";
+    li.addEventListener("click", () => addTag(tag));
+    tagSuggestions.appendChild(li);
+  });
+
+  tagSuggestions.style.display = "block";
+}
+
+function closeTagSuggestions() {
+  tagSuggestions.style.display = "none";
+}
+
+function requestTagSearch(query) {
+  const seq = ++tagSearchSeq;
+  chrome.runtime.sendMessage({ action: "searchTags", query }, (res) => {
+    if (seq !== tagSearchSeq) return;
+    if (res && res.success) renderTagSuggestions(res.tags || []);
+    else closeTagSuggestions();
+  });
+}
+
+newTagInput.addEventListener("input", () => {
+  const q = newTagInput.value.trim();
+  if (tagSearchTimer) {
+    clearTimeout(tagSearchTimer);
+    tagSearchTimer = null;
+  }
+  if (!q) {
+    closeTagSuggestions();
+    return;
+  }
+  tagSearchTimer = setTimeout(() => {
+    requestTagSearch(q);
+  }, SEARCH_DEBOUNCE_MS);
+});
+newTagInput.addEventListener("focus", () => {
+  if (newTagInput.value.trim()) {
+    if (tagSearchTimer) {
+      clearTimeout(tagSearchTimer);
+      tagSearchTimer = null;
+    }
+    requestTagSearch(newTagInput.value.trim());
+  }
+});
+
+// ---- tags ----
+function renderTags(tags) {
+  currentTags = normalizeTagList(tags);
+  tagList.innerHTML = "";
+  tagSection.style.display = "block";
+  if (currentTags.length === 0) return;
+
+  currentTags.forEach((tag) => {
     const chip = document.createElement("span");
     chip.className = "tag-item";
-    chip.textContent = tag;
+    chip.textContent = tag.name;
 
     const remove = document.createElement("span");
     remove.className = "tag-remove";
@@ -259,21 +341,23 @@ function renderTags(tags) {
 }
 
 function removeTag(tag) {
-  const tags = Array.from(tagList.querySelectorAll(".tag-item"))
-    .map((el) => el.textContent.replace("×", "").trim())
-    .filter((t) => t !== tag);
+  const targetId = tag.id;
+  const targetName = tag.name;
+  const tags = currentTags.filter((t) => (targetId ? t.id !== targetId : t.name !== targetName));
   updateTags(tags);
 }
 function addTag(tag) {
-  const t = String(tag || "").trim();
-  if (!t) return;
-  const tags = Array.from(tagList.querySelectorAll(".tag-item"))
-    .map((el) => el.textContent.replace("×", "").trim());
-  if (!tags.includes(t)) {
-    tags.push(t);
+  const entry = normalizeTagEntry(tag);
+  if (!entry || !entry.name) return;
+  const exists = currentTags.some((t) =>
+    (entry.id && t.id === entry.id) || t.name.toLowerCase() === entry.name.toLowerCase()
+  );
+  if (!exists) {
+    const tags = currentTags.concat([{ id: entry.id || "", name: entry.name }]);
     updateTags(tags);
   }
   newTagInput.value = "";
+  closeTagSuggestions();
 }
 addTagBtn.addEventListener("click", () => addTag(newTagInput.value));
 newTagInput.addEventListener("keypress", (e) => {
@@ -289,14 +373,15 @@ function updateTags(tags) {
     (res) => {
       // i18n
       if (res && res.success) {
-        renderTags(tags);
+        const resolved = Array.isArray(res.tags) ? res.tags : tags;
+        renderTags(resolved);
         if (res.syncFailed) {
           showToast(chrome.i18n.getMessage("toastTagsUpdateFailed"), "error");
         } else {
           showToast(chrome.i18n.getMessage("toastTagsUpdated"));
         }
       } else {
-        showToast(chrome.i18n.getMessage("toastTagsUpdateFailed"), "error");
+        showToast((res && res.error) || chrome.i18n.getMessage("toastTagsUpdateFailed"), "error");
       }
     }
   );
@@ -369,7 +454,8 @@ loginBtn.addEventListener("click", () => {
                   { action: "updateTags", gameId: r.game_id, tags: saved[r.game_id] },
                   (updateRes) => {
                     if (updateRes && updateRes.success) {
-                      renderTags(saved[r.game_id]);
+                      const resolved = Array.isArray(updateRes.tags) ? updateRes.tags : saved[r.game_id];
+                      renderTags(resolved);
                       // i18n
                       if (updateRes.syncFailed) {
                         showToast(chrome.i18n.getMessage("toastTagsUpdateFailed"), "error");
@@ -405,6 +491,7 @@ logoutBtn.addEventListener("click", () => {
     showToast(chrome.i18n.getMessage("toastLogoutSuccess"));
 
     closeSuggestions();
+    closeTagSuggestions();
     titleInput.value = "";
     titleCount.textContent = "0/140";
     gameInput.value = "";
@@ -442,7 +529,8 @@ chrome.runtime.sendMessage({ action: "getStreamInfo" }, (r) => {
           { action: "updateTags", gameId: r.game_id, tags: saved[r.game_id] },
           (updateRes) => {
             if (updateRes && updateRes.success) {
-              renderTags(saved[r.game_id]);
+              const resolved = Array.isArray(updateRes.tags) ? updateRes.tags : saved[r.game_id];
+              renderTags(resolved);
               // i18n
               if (updateRes.syncFailed) {
                 showToast(chrome.i18n.getMessage("toastTagsUpdateFailed"), "error");
@@ -472,5 +560,8 @@ chrome.runtime.sendMessage({ action: "getStreamInfo" }, (r) => {
 document.addEventListener("click", (e) => {
   if (!gameInput.contains(e.target) && gameSuggestions.style.display === "block") {
     closeSuggestions();
+  }
+  if (!newTagInput.contains(e.target) && !tagSuggestions.contains(e.target) && tagSuggestions.style.display === "block") {
+    closeTagSuggestions();
   }
 });
