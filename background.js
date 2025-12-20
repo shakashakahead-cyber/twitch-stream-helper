@@ -3,6 +3,9 @@
 // ==============================
 
 let accessToken = null;
+let refreshToken = null;
+let accessTokenExpiresAt = 0;
+let refreshingTokenPromise = null;
 
 let currentTitle = "";
 let currentCategoryName = "";
@@ -82,6 +85,114 @@ function toHashtag(categoryName) {
     .trim()
     .replace(/\s+/g, "")              // 空白を削除（詰める）
     .replace(/[^\p{L}\p{N}]/gu, "");  // 文字・数字以外を削除
+}
+
+function base64UrlEncodeBytes(bytes) {
+  let binary = "";
+  for (const b of bytes) {
+    binary += String.fromCharCode(b);
+  }
+  return btoa(binary)
+    .replace(/\+/g, "-")
+    .replace(/\//g, "_")
+    .replace(/=+$/, "");
+}
+
+function generateCodeVerifier() {
+  const bytes = new Uint8Array(32);
+  crypto.getRandomValues(bytes);
+  return base64UrlEncodeBytes(bytes);
+}
+
+async function createCodeChallenge(verifier) {
+  const data = new TextEncoder().encode(verifier);
+  const digest = await crypto.subtle.digest("SHA-256", data);
+  return base64UrlEncodeBytes(new Uint8Array(digest));
+}
+
+async function loadTokens() {
+  const data = await readLocal(["accessToken", "refreshToken", "accessTokenExpiresAt"]);
+  accessToken = data.accessToken || accessToken || null;
+  refreshToken = data.refreshToken || refreshToken || null;
+  accessTokenExpiresAt = data.accessTokenExpiresAt || accessTokenExpiresAt || 0;
+}
+
+async function saveTokens(tokenResponse) {
+  accessToken = tokenResponse.access_token || null;
+  if (tokenResponse.refresh_token) {
+    refreshToken = tokenResponse.refresh_token;
+  }
+  const expiresIn = Number(tokenResponse.expires_in || 0);
+  accessTokenExpiresAt = expiresIn ? Date.now() + (expiresIn * 1000) : 0;
+  await writeLocal({ accessToken, refreshToken, accessTokenExpiresAt });
+}
+
+async function clearTokens() {
+  accessToken = null;
+  refreshToken = null;
+  accessTokenExpiresAt = 0;
+  await new Promise(resolve => chrome.storage.local.remove(["accessToken", "refreshToken", "accessTokenExpiresAt"], resolve));
+}
+
+function isTokenExpiringSoon() {
+  if (!accessTokenExpiresAt) return false;
+  return Date.now() > (accessTokenExpiresAt - 60 * 1000);
+}
+
+async function exchangeCodeForToken(code, codeVerifier) {
+  const body = new URLSearchParams({
+    client_id: clientId,
+    grant_type: "authorization_code",
+    code,
+    redirect_uri: redirectUri,
+    code_verifier: codeVerifier,
+  });
+  const res = await fetch("https://id.twitch.tv/oauth2/token", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/x-www-form-urlencoded",
+    },
+    body: body.toString(),
+  });
+  if (!res.ok) {
+    const text = await res.text().catch(() => "");
+    throw new Error(text || "token_exchange_failed");
+  }
+  return res.json();
+}
+
+async function refreshAccessToken() {
+  await loadTokens();
+  if (!refreshToken) return false;
+  if (refreshingTokenPromise) return refreshingTokenPromise;
+
+  refreshingTokenPromise = (async () => {
+    const body = new URLSearchParams({
+      client_id: clientId,
+      grant_type: "refresh_token",
+      refresh_token: refreshToken,
+    });
+    const res = await fetch("https://id.twitch.tv/oauth2/token", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/x-www-form-urlencoded",
+      },
+      body: body.toString(),
+    });
+    if (!res.ok) {
+      await clearTokens();
+      return false;
+    }
+    const json = await res.json();
+    await saveTokens(json);
+    return true;
+  })();
+
+  try {
+    return await refreshingTokenPromise;
+  } finally {
+    refreshingTokenPromise = null;
+  }
 }
 
 const TAG_CACHE_TTL_MS = 24 * 60 * 60 * 1000;
@@ -224,16 +335,24 @@ function toTagIds(tags) {
   return tags.map((tag) => (typeof tag === "string" ? tag : tag.id)).filter(Boolean);
 }
 
-// storage から token を都度復元 + 401 で破棄
-async function twitchApi(endpoint, method = "GET", body = null) {
-  if (!accessToken) {
-    const data = await new Promise(resolve => chrome.storage.local.get(["accessToken"], resolve));
-    accessToken = data.accessToken || null;
+async function ensureAccessToken() {
+  await loadTokens();
+  if (!accessToken && refreshToken) {
+    const refreshed = await refreshAccessToken();
+    if (!refreshed) throw new Error(chrome.i18n.getMessage("errorLoginRequired"));
   }
-  // i18n
   if (!accessToken) throw new Error(chrome.i18n.getMessage("errorLoginRequired"));
+  if (isTokenExpiringSoon()) {
+    const refreshed = await refreshAccessToken();
+    if (!refreshed) throw new Error(chrome.i18n.getMessage("errorLoginRequired"));
+  }
+}
 
-  const res = await fetch(`https://api.twitch.tv/helix/${endpoint}`, {
+// storage から token を都度復元 + 401 で再取得
+async function twitchApi(endpoint, method = "GET", body = null) {
+  await ensureAccessToken();
+
+  const doFetch = () => fetch(`https://api.twitch.tv/helix/${endpoint}`, {
     method,
     headers: {
       "Authorization": `Bearer ${accessToken}`,
@@ -243,11 +362,18 @@ async function twitchApi(endpoint, method = "GET", body = null) {
     body: body ? JSON.stringify(cleanBody(body)) : null,
   });
 
-  // トークン失効
+  let res = await doFetch();
+
+  // トークン失効 → リフレッシュ試行
+  if (res.status === 401 && refreshToken) {
+    const refreshed = await refreshAccessToken();
+    if (refreshed) {
+      res = await doFetch();
+    }
+  }
+
   if (res.status === 401) {
-    await new Promise(r => chrome.storage.local.remove(["accessToken"], r));
-    accessToken = null;
-    // i18n
+    await clearTokens();
     throw new Error(chrome.i18n.getMessage("errorLoginRequired"));
   }
 
@@ -256,7 +382,6 @@ async function twitchApi(endpoint, method = "GET", body = null) {
   // JSON以外や空レス対策
   const text = await res.text().catch(() => "");
   if (!res.ok) {
-    // i18n
     throw new Error(chrome.i18n.getMessage("errorTwitchApi", [res.status, text]));
   }
   if (!text) return {};
@@ -385,14 +510,18 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
       // ------ 認証 ------
       if (message.action === "authenticate") {
         const state = Math.random().toString(36).slice(2) + Date.now().toString(36);
-        await new Promise(r => chrome.storage.local.set({ oauth_state: state }, r));
+        const codeVerifier = generateCodeVerifier();
+        const codeChallenge = await createCodeChallenge(codeVerifier);
+        await writeLocal({ oauth_state: state, oauth_code_verifier: codeVerifier });
 
         const authUrl =
           `https://id.twitch.tv/oauth2/authorize` +
           `?client_id=${encodeURIComponent(clientId)}` +
           `&redirect_uri=${encodeURIComponent(redirectUri)}` +
-          `&response_type=token` +
+          `&response_type=code` +
           `&scope=${encodeURIComponent("channel:manage:broadcast")}` +
+          `&code_challenge=${encodeURIComponent(codeChallenge)}` +
+          `&code_challenge_method=S256` +
           `&state=${encodeURIComponent(state)}`;
 
         chrome.identity.launchWebAuthFlow({ url: authUrl, interactive: true }, async (redirectUrl) => {
@@ -400,46 +529,55 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
             sendResponse({ success: false, error: chrome.runtime.lastError.message });
             return;
           }
-          const hash = (redirectUrl && redirectUrl.split("#")[1]) || "";
-          const params = new URLSearchParams(hash);
-          const returnedState = params.get("state");
-          const token = params.get("access_token");
+          if (!redirectUrl) {
+            sendResponse({ success: false, error: chrome.i18n.getMessage("errorTokenFetch") });
+            return;
+          }
 
-          const store = await new Promise(r => chrome.storage.local.get(["oauth_state"], r));
+          const url = new URL(redirectUrl);
+          const returnedState = url.searchParams.get("state");
+          const code = url.searchParams.get("code");
+          const error = url.searchParams.get("error");
+          const errorDescription = url.searchParams.get("error_description");
+
+          if (error) {
+            sendResponse({ success: false, error: errorDescription || error });
+            return;
+          }
+
+          const store = await readLocal(["oauth_state", "oauth_code_verifier"]);
           if (!returnedState || returnedState !== store.oauth_state) {
             // i18n
             sendResponse({ success: false, error: chrome.i18n.getMessage("errorCsrf") });
             return;
           }
-          await new Promise(r => chrome.storage.local.remove(["oauth_state"], r));
+          await new Promise(r => chrome.storage.local.remove(["oauth_state", "oauth_code_verifier"], r));
 
-          if (!token) {
+          if (!code || !store.oauth_code_verifier) {
             // i18n
             sendResponse({ success: false, error: chrome.i18n.getMessage("errorTokenFetch") });
             return;
           }
 
-          accessToken = token;
-          chrome.storage.local.set({ accessToken }, async () => {
-            try {
-              const user = await getUser();
-              currentUserLogin = user.login;
-              currentUserId = user.id || "";
-              await updateStreamState({ userLogin: currentUserLogin, userId: currentUserId });
-              sendResponse({ success: true });
-            } catch (e) {
-              // i18n
-              sendResponse({ success: false, error: chrome.i18n.getMessage("errorUserInfo") });
-            }
-          });
+          try {
+            const tokenData = await exchangeCodeForToken(code, store.oauth_code_verifier);
+            await saveTokens(tokenData);
+            const user = await getUser();
+            currentUserLogin = user.login;
+            currentUserId = user.id || "";
+            await updateStreamState({ userLogin: currentUserLogin, userId: currentUserId });
+            sendResponse({ success: true });
+          } catch (e) {
+            sendResponse({ success: false, error: chrome.i18n.getMessage("errorTokenFetch") });
+          }
         });
         return;
       }
 
       // ------ ログアウト ------
       else if (message.action === "logout") {
-        accessToken = null;
-        chrome.storage.local.remove(["accessToken"], () => sendResponse({ success: true }));
+        await clearTokens();
+        chrome.storage.local.remove(["oauth_state", "oauth_code_verifier"], () => sendResponse({ success: true }));
         return;
       }
 
