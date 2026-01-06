@@ -13,7 +13,7 @@ let currentCategoryId = "";
 let currentUserLogin = "";
 let currentUserId = "";
 
-const clientId = "vrl905kkccezbxe6ds281wk4md9qj0";
+const clientId = "YOUR_CLIENT_ID";
 const redirectUri = chrome.identity.getRedirectURL();
 
 // ---- Utilities ----
@@ -22,6 +22,7 @@ function cleanBody(obj) {
     Object.entries(obj).filter(([_, v]) => v !== undefined && v !== null && v !== "")
   );
 }
+
 
 function readLocal(keys) {
   return new Promise(resolve => chrome.storage.local.get(keys, resolve));
@@ -488,7 +489,7 @@ async function getCurrentChannelTagsFromTwitch(broadcasterId) {
       const { resolved } = await mapTags(entries);
       return resolved;
     }
-  } catch (_) {}
+  } catch (_) { }
   return [];
 }
 async function applyTagsToTwitch(broadcasterId, tags) {
@@ -509,7 +510,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     try {
       // ------ 認証 ------
       if (message.action === "authenticate") {
-        const state = Math.random().toString(36).slice(2) + Date.now().toString(36);
+        const state = generateCodeVerifier();
         const codeVerifier = generateCodeVerifier();
         const codeChallenge = await createCodeChallenge(codeVerifier);
         await writeLocal({ oauth_state: state, oauth_code_verifier: codeVerifier });

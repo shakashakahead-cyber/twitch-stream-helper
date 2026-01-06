@@ -1,0 +1,20 @@
+# Dependencies
+node_modules/
+
+# Production
+build/
+dist/
+
+# System Files
+.DS_Store
+Thumbs.db
+*.log
+
+# Editor Directories
+.vscode/
+.idea/
+*.swp
+
+# Extension specific
+*.pem
+.env
