@@ -145,8 +145,12 @@
     "message": "Twitch API Error: $status$ $text$",
     "description": "Error from Twitch API.",
     "placeholders": {
-      "status": { "content": "$1" },
-      "text": { "content": "$2" }
+      "status": {
+        "content": "$1"
+      },
+      "text": {
+        "content": "$2"
+      }
     }
   },
   "errorCsrf": {
@@ -173,11 +177,18 @@
     "message": "Tag not found: $tagName$",
     "description": "Error when a tag name cannot be mapped to a tag ID.",
     "placeholders": {
-      "tagName": { "content": "$1", "example": "English" }
+      "tagName": {
+        "content": "$1",
+        "example": "English"
+      }
     }
   },
   "errorUnknownAction": {
     "message": "Unknown action",
     "description": "Error for an unknown message action."
+  },
+  "errorTagLimit": {
+    "message": "Maximum of 10 tags allowed.",
+    "description": "Error for when the number of tags exceeds the limit."
   }
 }

@@ -16,7 +16,7 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   // 属性 (placeholder, title, aria-label) を置換
-  ["placeholder","title","aria-label"].forEach(attr => {
+  ["placeholder", "title", "aria-label"].forEach(attr => {
     document.querySelectorAll(`[${attr}]`).forEach(el => {
       const val = el.getAttribute(attr);
       if (val && re.test(val)) {
@@ -274,7 +274,7 @@ function renderTagSuggestions(tags) {
     const li = document.createElement("li");
     li.className = "suggestion-item";
     li.textContent = tag.name || "";
-    li.addEventListener("click", () => addTag(tag));
+    li.addEventListener("click", () => addTag(tag.name)); // Changed to pass string directly
     tagSuggestions.appendChild(li);
   });
 
@@ -294,29 +294,8 @@ function requestTagSearch(query) {
   });
 }
 
-newTagInput.addEventListener("input", () => {
-  const q = newTagInput.value.trim();
-  if (tagSearchTimer) {
-    clearTimeout(tagSearchTimer);
-    tagSearchTimer = null;
-  }
-  if (!q) {
-    closeTagSuggestions();
-    return;
-  }
-  tagSearchTimer = setTimeout(() => {
-    requestTagSearch(q);
-  }, SEARCH_DEBOUNCE_MS);
-});
-newTagInput.addEventListener("focus", () => {
-  if (newTagInput.value.trim()) {
-    if (tagSearchTimer) {
-      clearTimeout(tagSearchTimer);
-      tagSearchTimer = null;
-    }
-    requestTagSearch(newTagInput.value.trim());
-  }
-});
+// (Tag search listener removed as it is no longer supported)
+// newTagInput listeners for search removed.
 
 // ---- tags ----
 function renderTags(tags) {
@@ -359,6 +338,7 @@ function addTag(tag) {
   newTagInput.value = "";
   closeTagSuggestions();
 }
+// addTagBtn passes the value directly
 addTagBtn.addEventListener("click", () => addTag(newTagInput.value));
 newTagInput.addEventListener("keypress", (e) => {
   if (e.key === "Enter") {
@@ -526,22 +506,22 @@ chrome.runtime.sendMessage({ action: "getStreamInfo" }, (r) => {
         const saved = res2.savedTags || {};
         if (saved[r.game_id]) {
           chrome.runtime.sendMessage(
-          { action: "updateTags", gameId: r.game_id, tags: saved[r.game_id] },
-          (updateRes) => {
-            if (updateRes && updateRes.success) {
-              const resolved = Array.isArray(updateRes.tags) ? updateRes.tags : saved[r.game_id];
-              renderTags(resolved);
-              // i18n
-              if (updateRes.syncFailed) {
-                showToast(chrome.i18n.getMessage("toastTagsUpdateFailed"), "error");
+            { action: "updateTags", gameId: r.game_id, tags: saved[r.game_id] },
+            (updateRes) => {
+              if (updateRes && updateRes.success) {
+                const resolved = Array.isArray(updateRes.tags) ? updateRes.tags : saved[r.game_id];
+                renderTags(resolved);
+                // i18n
+                if (updateRes.syncFailed) {
+                  showToast(chrome.i18n.getMessage("toastTagsUpdateFailed"), "error");
+                } else {
+                  showToast(chrome.i18n.getMessage("toastSavedTagsApplied"));
+                }
               } else {
-                showToast(chrome.i18n.getMessage("toastSavedTagsApplied"));
+                showToast(chrome.i18n.getMessage("toastTagsUpdateFailed"), "error");
               }
-            } else {
-              showToast(chrome.i18n.getMessage("toastTagsUpdateFailed"), "error");
             }
-          }
-        );
+          );
         }
       });
     }

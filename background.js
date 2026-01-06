@@ -13,7 +13,7 @@ let currentCategoryId = "";
 let currentUserLogin = "";
 let currentUserId = "";
 
-const clientId = "YOUR_CLIENT_ID";
+const clientId = "YOUR_TWITCH_CLIENT_ID";
 const redirectUri = chrome.identity.getRedirectURL();
 
 // ---- Utilities ----
@@ -99,17 +99,7 @@ function base64UrlEncodeBytes(bytes) {
     .replace(/=+$/, "");
 }
 
-function generateCodeVerifier() {
-  const bytes = new Uint8Array(32);
-  crypto.getRandomValues(bytes);
-  return base64UrlEncodeBytes(bytes);
-}
-
-async function createCodeChallenge(verifier) {
-  const data = new TextEncoder().encode(verifier);
-  const digest = await crypto.subtle.digest("SHA-256", data);
-  return base64UrlEncodeBytes(new Uint8Array(digest));
-}
+// (Code Verifier/Challenge functions removed for Implicit Flow)
 
 async function loadTokens() {
   const data = await readLocal(["accessToken", "refreshToken", "accessTokenExpiresAt"]);
@@ -140,27 +130,7 @@ function isTokenExpiringSoon() {
   return Date.now() > (accessTokenExpiresAt - 60 * 1000);
 }
 
-async function exchangeCodeForToken(code, codeVerifier) {
-  const body = new URLSearchParams({
-    client_id: clientId,
-    grant_type: "authorization_code",
-    code,
-    redirect_uri: redirectUri,
-    code_verifier: codeVerifier,
-  });
-  const res = await fetch("https://id.twitch.tv/oauth2/token", {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/x-www-form-urlencoded",
-    },
-    body: body.toString(),
-  });
-  if (!res.ok) {
-    const text = await res.text().catch(() => "");
-    throw new Error(text || "token_exchange_failed");
-  }
-  return res.json();
-}
+// (exchangeCodeForToken removed for Implicit Flow)
 
 async function refreshAccessToken() {
   await loadTokens();
@@ -196,105 +166,20 @@ async function refreshAccessToken() {
   }
 }
 
-const TAG_CACHE_TTL_MS = 24 * 60 * 60 * 1000;
-let tagCatalog = null;
-let tagCatalogFetchedAt = 0;
-
-function getUiLocale() {
-  const locale = chrome.i18n && chrome.i18n.getUILanguage ? chrome.i18n.getUILanguage() : "en-us";
-  return String(locale || "en-us").toLowerCase();
-}
-
-function normalizeTagName(name) {
-  return String(name || "").trim().toLowerCase();
-}
-
-function pickLocalizedTagName(namesByLocale, locale) {
-  if (!namesByLocale) return "";
-  const normalized = String(locale || "").toLowerCase();
-  const candidates = [];
-  if (normalized) {
-    candidates.push(normalized);
-    if (normalized.includes("_")) candidates.push(normalized.replace("_", "-"));
-    if (normalized.includes("-")) candidates.push(normalized.replace("-", "_"));
-  }
-  candidates.push("en-us");
-  for (const loc of candidates) {
-    if (namesByLocale[loc]) return namesByLocale[loc];
-  }
-  const values = Object.values(namesByLocale);
-  return values.length ? values[0] : "";
-}
-
-function buildTagCatalog(rawTags) {
-  const locale = getUiLocale();
-  const byId = new Map();
-  const nameIndex = new Map();
-  const list = rawTags.map((tag) => {
-    const namesByLocale = tag.names || {};
-    const allNames = Object.values(namesByLocale).filter(Boolean);
-    const displayName = pickLocalizedTagName(namesByLocale, locale) || allNames[0] || "";
-    const entry = { id: tag.id, name: displayName, names: allNames, isAuto: Boolean(tag.isAuto) };
-    if (entry.id) byId.set(entry.id, entry);
-    for (const n of allNames) {
-      nameIndex.set(normalizeTagName(n), entry);
-    }
-    if (entry.name) {
-      nameIndex.set(normalizeTagName(entry.name), entry);
-    }
-    return entry;
-  });
-  return { list, byId, nameIndex };
-}
-
-async function fetchAllStreamTags() {
-  let after = "";
-  const tags = [];
-  do {
-    const params = new URLSearchParams({ first: "100" });
-    if (after) params.set("after", after);
-    const res = await twitchApi(`tags/streams?${params.toString()}`);
-    const data = res.data || [];
-    for (const tag of data) {
-      const id = tag.tag_id || tag.id;
-      const names = tag.localization_names || {};
-      const isAuto = Boolean(tag.is_auto);
-      if (id) tags.push({ id, names, isAuto });
-    }
-    after = res.pagination && res.pagination.cursor ? res.pagination.cursor : "";
-  } while (after);
-  return tags;
-}
-
-async function getTagCatalog() {
-  const now = Date.now();
-  if (tagCatalog && (now - tagCatalogFetchedAt) < TAG_CACHE_TTL_MS) {
-    return tagCatalog;
-  }
-  const cached = await readLocal(["tagCatalogCache"]);
-  if (cached.tagCatalogCache && (now - cached.tagCatalogCache.fetchedAt) < TAG_CACHE_TTL_MS) {
-    tagCatalog = buildTagCatalog(cached.tagCatalogCache.tags || []);
-    tagCatalogFetchedAt = cached.tagCatalogCache.fetchedAt;
-    return tagCatalog;
-  }
-  const tags = await fetchAllStreamTags();
-  tagCatalog = buildTagCatalog(tags);
-  tagCatalogFetchedAt = now;
-  await writeLocal({ tagCatalogCache: { fetchedAt: now, tags } });
-  return tagCatalog;
-}
+// (Deprecated tag catalog functions removed)
 
 function normalizeTagEntry(tag) {
   if (!tag) return null;
   if (typeof tag === "string") {
     const name = tag.trim();
-    return name ? { id: "", name } : null;
+    return name ? { id: name, name } : null; // Use name as ID for string-based tags
   }
   if (typeof tag === "object") {
-    const id = String(tag.id || tag.tag_id || "").trim();
-    const name = String(tag.name || tag.label || tag.tag || "").trim();
-    if (!id && !name) return null;
-    return { id, name };
+    // If it has an ID, check if it looks like a legacy UUID tag. Use name if possible.
+    // Modern tags primarily rely on text.
+    const name = String(tag.name || tag.label || tag.tag || tag.id || "").trim();
+    if (!name) return null;
+    return { id: name, name };
   }
   return null;
 }
@@ -304,36 +189,24 @@ function normalizeTagEntries(tags) {
   return tags.map(normalizeTagEntry).filter(Boolean);
 }
 
+// Simply pass through tags as verified since we can't validate against a global catalog anymore
 async function mapTags(tagEntries) {
-  if (!tagEntries.length) return { resolved: [], missing: [] };
-  const catalog = await getTagCatalog();
   const resolved = [];
-  const missing = [];
   for (const entry of tagEntries) {
-    if (!entry) continue;
-    if (entry.id) {
-      const found = catalog.byId.get(entry.id);
-      if (found) resolved.push({ id: found.id, name: found.name });
-      else resolved.push({ id: entry.id, name: entry.name || entry.id });
-      continue;
-    }
-    if (entry.name) {
-      const byId = catalog.byId.get(entry.name);
-      if (byId && !byId.isAuto) {
-        resolved.push({ id: byId.id, name: byId.name });
-        continue;
-      }
-      const found = catalog.nameIndex.get(normalizeTagName(entry.name));
-      if (found && !found.isAuto) resolved.push({ id: found.id, name: found.name });
-      else missing.push(entry.name);
+    if (entry && entry.name) {
+      resolved.push({ id: entry.name, name: entry.name });
     }
   }
-  return { resolved, missing };
+  return { resolved, missing: [] };
 }
 
 function toTagIds(tags) {
   if (!Array.isArray(tags)) return [];
-  return tags.map((tag) => (typeof tag === "string" ? tag : tag.id)).filter(Boolean);
+  // For modern Twitch API, we send the tag NAME as the string, not a UUID.
+  return tags.map((tag) => {
+    if (typeof tag === "string") return tag;
+    return tag.name || tag.id;
+  }).filter(Boolean);
 }
 
 async function ensureAccessToken() {
@@ -485,9 +358,8 @@ async function getCurrentChannelTagsFromTwitch(broadcasterId) {
     const ch = await twitchApi(`channels?broadcaster_id=${broadcasterId}`);
     const info = ch.data && ch.data[0];
     if (info && Array.isArray(info.tags)) {
-      const entries = info.tags.map((id) => ({ id }));
-      const { resolved } = await mapTags(entries);
-      return resolved;
+      const entries = info.tags.map((tagStr) => ({ id: tagStr, name: tagStr }));
+      return entries;
     }
   } catch (_) { }
   return [];
@@ -510,19 +382,16 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     try {
       // ------ 認証 ------
       if (message.action === "authenticate") {
-        const state = generateCodeVerifier();
-        const codeVerifier = generateCodeVerifier();
-        const codeChallenge = await createCodeChallenge(codeVerifier);
-        await writeLocal({ oauth_state: state, oauth_code_verifier: codeVerifier });
+        // Implicit Flow: state only, no PKCE
+        const state = Math.random().toString(36).slice(2) + Date.now().toString(36);
+        await writeLocal({ oauth_state: state });
 
         const authUrl =
           `https://id.twitch.tv/oauth2/authorize` +
           `?client_id=${encodeURIComponent(clientId)}` +
           `&redirect_uri=${encodeURIComponent(redirectUri)}` +
-          `&response_type=code` +
+          `&response_type=token` + // Change: code -> token
           `&scope=${encodeURIComponent("channel:manage:broadcast")}` +
-          `&code_challenge=${encodeURIComponent(codeChallenge)}` +
-          `&code_challenge_method=S256` +
           `&state=${encodeURIComponent(state)}`;
 
         chrome.identity.launchWebAuthFlow({ url: authUrl, interactive: true }, async (redirectUrl) => {
@@ -536,39 +405,50 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
           }
 
           const url = new URL(redirectUrl);
-          const returnedState = url.searchParams.get("state");
-          const code = url.searchParams.get("code");
-          const error = url.searchParams.get("error");
-          const errorDescription = url.searchParams.get("error_description");
+          // Implicit flow returns params in the hash (#)
+          const hashParams = new URLSearchParams(url.hash.substring(1)); // remove leading '#'
+
+          const returnedState = hashParams.get("state");
+          const accessTokenFromUrl = hashParams.get("access_token");
+          const error = hashParams.get("error");
+          const errorDescription = hashParams.get("error_description");
 
           if (error) {
+            console.error("❌ Auth Flow Error (Implicit):", error, errorDescription);
             sendResponse({ success: false, error: errorDescription || error });
             return;
           }
 
-          const store = await readLocal(["oauth_state", "oauth_code_verifier"]);
+          const store = await readLocal(["oauth_state"]);
           if (!returnedState || returnedState !== store.oauth_state) {
-            // i18n
             sendResponse({ success: false, error: chrome.i18n.getMessage("errorCsrf") });
             return;
           }
-          await new Promise(r => chrome.storage.local.remove(["oauth_state", "oauth_code_verifier"], r));
+          await new Promise(r => chrome.storage.local.remove(["oauth_state"], r));
 
-          if (!code || !store.oauth_code_verifier) {
-            // i18n
+          if (!accessTokenFromUrl) {
             sendResponse({ success: false, error: chrome.i18n.getMessage("errorTokenFetch") });
             return;
           }
 
           try {
-            const tokenData = await exchangeCodeForToken(code, store.oauth_code_verifier);
+            // Implicit flow gives us the token directly
+            // We mimic the structure of "tokenData" expected by saveTokens
+            // default expiry ~60 days for implicit 
+            const tokenData = {
+              access_token: accessTokenFromUrl,
+              refresh_token: null, // No refresh token in implicit flow
+              expires_in: 86400 * 60 // Estimate or parse from input if available (scope dependent)
+            };
             await saveTokens(tokenData);
+
             const user = await getUser();
             currentUserLogin = user.login;
             currentUserId = user.id || "";
             await updateStreamState({ userLogin: currentUserLogin, userId: currentUserId });
             sendResponse({ success: true });
           } catch (e) {
+            console.error("❌ User Fetch Exception:", e);
             sendResponse({ success: false, error: chrome.i18n.getMessage("errorTokenFetch") });
           }
         });
@@ -578,7 +458,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
       // ------ ログアウト ------
       else if (message.action === "logout") {
         await clearTokens();
-        chrome.storage.local.remove(["oauth_state", "oauth_code_verifier"], () => sendResponse({ success: true }));
+        chrome.storage.local.remove(["oauth_state"], () => sendResponse({ success: true }));
         return;
       }
 
@@ -654,34 +534,9 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
         return;
       }
 
-      // ------ タグ検索 ------
+      // ------ タグ検索 (Legacy API removed) ------
       else if (message.action === "searchTags") {
-        const q = String(message.query || "").trim();
-        if (!q) { sendResponse({ success: true, tags: [] }); return; }
-
-        const catalog = await getTagCatalog();
-        const qLower = q.toLowerCase();
-        const results = [];
-        for (const tag of catalog.list) {
-          if (tag.isAuto) continue;
-          if (!tag.name) continue;
-          const names = tag.names && tag.names.length ? tag.names : [tag.name];
-          let matched = false;
-          let starts = false;
-          for (const n of names) {
-            const nLower = n.toLowerCase();
-            if (nLower.startsWith(qLower)) { matched = true; starts = true; break; }
-            if (nLower.includes(qLower)) matched = true;
-          }
-          if (matched) results.push({ tag, starts });
-        }
-        results.sort((a, b) => {
-          if (a.starts !== b.starts) return a.starts ? -1 : 1;
-          return a.tag.name.localeCompare(b.tag.name);
-        });
-
-        const tags = results.slice(0, 20).map((r) => ({ id: r.tag.id, name: r.tag.name }));
-        sendResponse({ success: true, tags });
+        sendResponse({ success: true, tags: [] });
         return;
       }
 
@@ -746,6 +601,11 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
         if (missing.length > 0) {
           const sample = missing.slice(0, 3).join(", ");
           sendResponse({ success: false, error: chrome.i18n.getMessage("errorTagNotFound", [sample]) });
+          return;
+        }
+
+        if (resolved.length > 10) {
+          sendResponse({ success: false, error: chrome.i18n.getMessage("errorTagLimit") });
           return;
         }
 

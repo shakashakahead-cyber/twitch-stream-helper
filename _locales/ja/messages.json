@@ -176,5 +176,9 @@
   "errorUnknownAction": {
     "message": "未知のアクションです",
     "description": "不明なアクションのエラー"
+  },
+  "errorTagLimit": {
+    "message": "タグは最大10個までです",
+    "description": "タグ数の上限エラー"
   }
 }

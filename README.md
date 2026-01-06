@@ -31,7 +31,7 @@ const clientId = "YOUR_TWITCH_CLIENT_ID";
 
 4. 必要スコープは `channel:manage:broadcast`
 
-注: 現状は implicit flow（`response_type=token`）を使用しています。公開運用ではPKCE対応の認可コードフロー移行を推奨します。
+注: 本プロジェクトは現在 **Implicit Grant Flow** (`response_type=token`) を使用しています。これはクライアントサイド拡張機能にとってシンプルですが、アクセストークンの有効期限が比較的短く、リフレッシュトークンは提供されません。「invalid client credentials」エラーを回避するため、PKCEロジックは削除されました。
 
 ### 手動インストール
 1. `chrome://extensions` を開き、デベロッパーモードをON
@@ -67,7 +67,7 @@ const clientId = "YOUR_TWITCH_CLIENT_ID";
 
 4. The required scope is `channel:manage:broadcast`.
 
-Note: This project currently uses the implicit flow (`response_type=token`). For production, consider migrating to the authorization code flow with PKCE.
+Note: This project uses the **Implicit Grant Flow** (`response_type=token`). This is simpler for client-side extensions but means access tokens are short-lived and no refresh token is provided. PKCE logic has been removed to simplify the authentication process and avoid "invalid client credentials" errors.
 
 ## Run (unpacked)
 1. Open `chrome://extensions` and enable Developer mode.
