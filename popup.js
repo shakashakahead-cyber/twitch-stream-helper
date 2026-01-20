@@ -2,6 +2,8 @@
 // Twitch Stream Helper - popup.js
 // ==============================
 
+import { normalizeTagEntry, normalizeTagList } from "./src/utils.js";
+
 // ---- i18n replace for __MSG_...__ in HTML ----
 document.addEventListener("DOMContentLoaded", () => {
   const re = /__MSG_([A-Za-z0-9_@]+)__/g;
@@ -57,7 +59,7 @@ let currentTags = [];
 const SEARCH_DEBOUNCE_MS = 250;
 let searchTimer = null;
 let searchSeq = 0;
-let tagSearchTimer = null;
+let tagSearchTimer = null; // Unused but kept for structure if needed
 let tagSearchSeq = 0;
 
 // ---- toast ----
@@ -78,7 +80,6 @@ titleInput.addEventListener("input", () => {
 });
 titleInput.addEventListener("change", () => {
   chrome.runtime.sendMessage({ action: "updateTitle", title: titleInput.value }, (res) => {
-    // i18n
     if (res && res.success) showToast(chrome.i18n.getMessage("toastTitleUpdated"));
     else showToast(chrome.i18n.getMessage("toastTitleUpdateFailed"), "error");
   });
@@ -102,7 +103,6 @@ function setCategory(name, boxArtUrlTemplate, id = "") {
 
   if (!name) {
     const label = document.createElement("span");
-    // i18n
     label.textContent = chrome.i18n.getMessage("toastCategoryNotSet");
     selectedCategory.appendChild(label);
   } else {
@@ -143,7 +143,6 @@ function renderGameSuggestions(games) {
   if (!Array.isArray(games) || games.length === 0) {
     const li = document.createElement("li");
     li.className = "suggestion-item";
-    // i18n
     li.textContent = chrome.i18n.getMessage("toastHistoryEmpty");
     gameSuggestions.appendChild(li);
     gameSuggestions.style.display = "block";
@@ -174,7 +173,7 @@ function renderGameSuggestions(games) {
             currentGameId = res.game_id || g.id;
             currentGameName = res.game_name || g.name;
             renderTags(res.tags || []);
-            // i18n
+
             if (res.tagSyncFailed) {
               showToast(chrome.i18n.getMessage("toastTagsUpdateFailed"), "error");
             } else if (res.isNew) {
@@ -183,7 +182,6 @@ function renderGameSuggestions(games) {
               showToast(chrome.i18n.getMessage("toastCategorySwitched", g.name));
             }
           } else {
-            // i18n
             showToast(res?.error || chrome.i18n.getMessage("toastCategoryUpdateFailed"), "error");
           }
         }
@@ -197,27 +195,6 @@ function renderGameSuggestions(games) {
 }
 function closeSuggestions() {
   gameSuggestions.style.display = "none";
-}
-
-function normalizeTagEntry(tag) {
-  if (!tag) return null;
-  if (typeof tag === "string") {
-    const name = tag.trim();
-    return name ? { id: "", name } : null;
-  }
-  if (typeof tag === "object") {
-    const id = String(tag.id || tag.tag_id || "").trim();
-    let name = String(tag.name || tag.label || tag.tag || "").trim();
-    if (!name && id) name = id;
-    if (!id && !name) return null;
-    return { id, name };
-  }
-  return null;
-}
-
-function normalizeTagList(tags) {
-  if (!Array.isArray(tags)) return [];
-  return tags.map(normalizeTagEntry).filter((t) => t && t.name);
 }
 
 function requestSavedCategories() {
@@ -274,7 +251,7 @@ function renderTagSuggestions(tags) {
     const li = document.createElement("li");
     li.className = "suggestion-item";
     li.textContent = tag.name || "";
-    li.addEventListener("click", () => addTag(tag.name)); // Changed to pass string directly
+    li.addEventListener("click", () => addTag(tag.name));
     tagSuggestions.appendChild(li);
   });
 
@@ -294,12 +271,9 @@ function requestTagSearch(query) {
   });
 }
 
-// (Tag search listener removed as it is no longer supported)
-// newTagInput listeners for search removed.
-
 // ---- tags ----
 function renderTags(tags) {
-  currentTags = normalizeTagList(tags);
+  currentTags = normalizeTagList(tags); // Use imported utility
   tagList.innerHTML = "";
   tagSection.style.display = "block";
   if (currentTags.length === 0) return;
@@ -326,7 +300,7 @@ function removeTag(tag) {
   updateTags(tags);
 }
 function addTag(tag) {
-  const entry = normalizeTagEntry(tag);
+  const entry = normalizeTagEntry(tag); // Use imported utility
   if (!entry || !entry.name) return;
   const exists = currentTags.some((t) =>
     (entry.id && t.id === entry.id) || t.name.toLowerCase() === entry.name.toLowerCase()
@@ -338,7 +312,7 @@ function addTag(tag) {
   newTagInput.value = "";
   closeTagSuggestions();
 }
-// addTagBtn passes the value directly
+
 addTagBtn.addEventListener("click", () => addTag(newTagInput.value));
 newTagInput.addEventListener("keypress", (e) => {
   if (e.key === "Enter") {
@@ -351,7 +325,6 @@ function updateTags(tags) {
   chrome.runtime.sendMessage(
     { action: "updateTags", gameId, tags },
     (res) => {
-      // i18n
       if (res && res.success) {
         const resolved = Array.isArray(res.tags) ? res.tags : tags;
         renderTags(resolved);
@@ -377,7 +350,6 @@ postToXBtn.addEventListener("click", () => {
       currentCategory: currentGameName,
     },
     (res) => {
-      // i18n
       if (res && res.success) showToast(chrome.i18n.getMessage("toastXPostOpened"), "success");
       else showToast(chrome.i18n.getMessage("toastXPostFailed"), "error");
     }
@@ -410,7 +382,6 @@ loginBtn.addEventListener("click", () => {
       loginBtn.style.display = "none";
       logoutBtn.style.display = "inline-block";
       mainUI.style.display = "block";
-      // i18n
       showToast(chrome.i18n.getMessage("toastLoginSuccess"));
 
       chrome.runtime.sendMessage({ action: "getStreamInfo" }, (r) => {
@@ -436,7 +407,6 @@ loginBtn.addEventListener("click", () => {
                     if (updateRes && updateRes.success) {
                       const resolved = Array.isArray(updateRes.tags) ? updateRes.tags : saved[r.game_id];
                       renderTags(resolved);
-                      // i18n
                       if (updateRes.syncFailed) {
                         showToast(chrome.i18n.getMessage("toastTagsUpdateFailed"), "error");
                       } else {
@@ -450,14 +420,12 @@ loginBtn.addEventListener("click", () => {
               }
             });
           }
-          // i18n
           if (r.isNew) {
             showToast(chrome.i18n.getMessage("toastCurrentCategorySaved", r.game_name));
           }
         }
       });
     } else {
-      // i18n
       showToast((res && res.error) || chrome.i18n.getMessage("toastLoginFailed"), "error");
     }
   });
@@ -467,7 +435,6 @@ logoutBtn.addEventListener("click", () => {
     loginBtn.style.display = "inline-block";
     logoutBtn.style.display = "none";
     mainUI.style.display = "none";
-    // i18n
     showToast(chrome.i18n.getMessage("toastLogoutSuccess"));
 
     closeSuggestions();
@@ -511,7 +478,6 @@ chrome.runtime.sendMessage({ action: "getStreamInfo" }, (r) => {
               if (updateRes && updateRes.success) {
                 const resolved = Array.isArray(updateRes.tags) ? updateRes.tags : saved[r.game_id];
                 renderTags(resolved);
-                // i18n
                 if (updateRes.syncFailed) {
                   showToast(chrome.i18n.getMessage("toastTagsUpdateFailed"), "error");
                 } else {
@@ -525,7 +491,6 @@ chrome.runtime.sendMessage({ action: "getStreamInfo" }, (r) => {
         }
       });
     }
-    // i18n
     if (r.isNew) {
       showToast(chrome.i18n.getMessage("toastCurrentCategorySaved", r.game_name));
     }
