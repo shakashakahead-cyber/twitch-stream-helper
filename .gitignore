@@ -18,3 +18,4 @@ Thumbs.db
 # Extension specific
 *.pem
 .env
+src/config.js

@@ -38,7 +38,18 @@ async function twitchApi(endpoint, method = "GET", body = null) {
 
     const text = await res.text().catch(() => "");
     if (!res.ok) {
-        throw new Error(chrome.i18n.getMessage("errorTwitchApi", [res.status, text]));
+        const isRateLimited = res.status === 429;
+        const error = new Error(isRateLimited
+            ? chrome.i18n.getMessage("errorTwitchRateLimited")
+            : chrome.i18n.getMessage("errorTwitchApi", [res.status, text]));
+        error.status = res.status;
+        error.responseText = text;
+
+        const resetAt = Number(res.headers.get("Ratelimit-Reset"));
+        if (Number.isFinite(resetAt) && resetAt > 0) {
+            error.retryAt = resetAt * 1000;
+        }
+        throw error;
     }
     if (!text) return {};
     try {

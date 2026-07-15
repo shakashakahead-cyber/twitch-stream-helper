@@ -3,6 +3,10 @@
     "message": "Twitch Stream Helper",
     "description": "The name of the extension."
   },
+  "appSubtitle": {
+    "message": "Stream settings, all in one place",
+    "description": "Short subtitle displayed in the popup header."
+  },
   "extensionDescription": {
     "message": "A handy extension for managing your Twitch stream.",
     "description": "The description of the extension."
@@ -15,13 +19,69 @@
     "message": "Logout",
     "description": "Logout button text."
   },
+  "connectedStatus": {
+    "message": "Connected",
+    "description": "Status shown while connected to Twitch."
+  },
+  "loginPrompt": {
+    "message": "Log in to Twitch to manage your title, category, tags, and X post from one place.",
+    "description": "Prompt shown before the user logs in."
+  },
   "streamTitleLabel": {
     "message": "Stream Title",
     "description": "Label for the stream title input."
   },
+  "titleSectionDescription": {
+    "message": "Changes are applied when you leave the field or press Enter.",
+    "description": "Description for the stream title section."
+  },
+  "expandedLengthLabel": {
+    "message": "Expanded",
+    "description": "Label shown before the expanded title length."
+  },
+  "currentTwitchTitleLabel": {
+    "message": "Current title on Twitch",
+    "description": "Label for the title currently applied on Twitch."
+  },
+  "titleSyncPending": {
+    "message": "Not applied",
+    "description": "Status shown when the title edit has not been applied."
+  },
+  "titleSyncing": {
+    "message": "Applying…",
+    "description": "Status shown while applying the title."
+  },
+  "titleSyncSynced": {
+    "message": "Applied",
+    "description": "Status shown when the title matches Twitch."
+  },
+  "titleSyncFailed": {
+    "message": "Failed",
+    "description": "Status shown when applying the title failed."
+  },
+  "templatePreviewLabel": {
+    "message": "Preview:",
+    "description": "Label for an expanded template preview."
+  },
+  "templateVariablesLabel": {
+    "message": "Template variables",
+    "description": "Label for the template variable insertion buttons."
+  },
+  "titleTemplateHint": {
+    "message": "Click a variable to insert it. Category and tag variables are reapplied automatically when those values change.",
+    "description": "Help text for stream title templates."
+  },
+  "postTemplateHint": {
+    "message": "Use variables to control the contents and placement of the X post text.",
+    "description": "Help text for X post templates."
+  },
   "categoryLabel": {
     "message": "Category",
     "description": "Label for the category input."
+  },
+  "categorySectionDescription": {
+    "message": "Search for and switch the category currently being streamed.",
+    "description": "Description for the category section."
   },
   "categorySearchPlaceholder": {
     "message": "Search for a category",
@@ -30,6 +90,10 @@
   "tagsLabel": {
     "message": "Tags",
     "description": "Label for the tags section."
+  },
+  "tagsSectionDescription": {
+    "message": "Save and apply tags for each category.",
+    "description": "Description for the tags section."
   },
   "newTagPlaceholder": {
     "message": "New Tag",
@@ -40,8 +104,16 @@
     "description": "Button to add a new tag."
   },
   "postToXSectionLabel": {
-    "message": "Additional Text (for X post)",
-    "description": "Label for the custom text area for X (Twitter)."
+    "message": "X Post",
+    "description": "Heading for the X post section."
+  },
+  "postSectionDescription": {
+    "message": "Preview the post and open the X compose screen.",
+    "description": "Description for the X post section."
+  },
+  "postTextLabel": {
+    "message": "Additional text",
+    "description": "Label for the custom X post text area."
   },
   "customHashtagsPlaceholder": {
     "message": "#GoingLive",
@@ -51,9 +123,24 @@
     "message": "Hashtag the category",
     "description": "Checkbox to include the category as a hashtag."
   },
+  "excludeStreamUrlCheckbox": {
+    "message": "Do not include the stream URL",
+    "description": "Checkbox that removes the Twitch stream URL from the X post."
+  },
   "postToXButton": {
     "message": "Post to X",
     "description": "Button to post on X (Twitter)."
+  },
+  "removeCategoryButtonLabel": {
+    "message": "Clear the selected category",
+    "description": "Accessible label for the selected category remove button."
+  },
+  "removeTagButtonLabel": {
+    "message": "Remove $tagName$",
+    "description": "Accessible label for a tag remove button.",
+    "placeholders": {
+      "tagName": { "content": "$1" }
+    }
   },
   "toastTitleUpdated": {
     "message": "Title updated.",
@@ -153,6 +240,10 @@
       }
     }
   },
+  "errorTwitchRateLimited": {
+    "message": "Twitch is receiving updates too quickly. Please wait a moment and try again.",
+    "description": "Error shown when Twitch temporarily rate-limits API updates."
+  },
   "errorCsrf": {
     "message": "State mismatch (CSRF protection)",
     "description": "Error for OAuth state mismatch."
@@ -190,5 +281,13 @@
   "errorTagLimit": {
     "message": "Maximum of 10 tags allowed.",
     "description": "Error for when the number of tags exceeds the limit."
+  },
+  "errorTitleTooLong": {
+    "message": "The expanded title is $count$ characters; the maximum is $max$.",
+    "description": "Error when an expanded stream title exceeds the Twitch title limit.",
+    "placeholders": {
+      "count": { "content": "$1" },
+      "max": { "content": "$2" }
+    }
   }
 }
