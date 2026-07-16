@@ -132,8 +132,8 @@
     "description": "Button to post on X (Twitter)."
   },
   "removeCategoryButtonLabel": {
-    "message": "Clear the selected category",
-    "description": "Accessible label for the selected category remove button."
+    "message": "Change category",
+    "description": "Accessible label for the category change button."
   },
   "removeTagButtonLabel": {
     "message": "Remove $tagName$",

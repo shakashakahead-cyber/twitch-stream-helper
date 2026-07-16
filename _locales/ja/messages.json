@@ -132,8 +132,8 @@
     "description": "X投稿ボタン"
   },
   "removeCategoryButtonLabel": {
-    "message": "選択中のカテゴリを解除",
-    "description": "選択中カテゴリの解除ボタンの読み上げラベル"
+    "message": "カテゴリを変更",
+    "description": "カテゴリ変更ボタンの読み上げラベル"
   },
   "removeTagButtonLabel": {
     "message": "$tagName$を削除",

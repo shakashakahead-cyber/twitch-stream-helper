@@ -18,19 +18,12 @@ Twitch配信のタイトル・カテゴリ・タグの管理と、X投稿画面�
 - 配信管理権限のあるTwitchアカウント
 
 ### OAuth設定（必須）
-この拡張は `chrome.identity.launchWebAuthFlow` を使ってTwitch認証します。Twitch開発者コンソールでアプリを作成し、ローカル設定ファイルにClient IDを設定してください。
+この拡張は `chrome.identity.launchWebAuthFlow` を使ってTwitch認証します。Twitch Client IDは`src/config.js`に同梱されています。
 
-1. Twitch開発者コンソールでアプリを作成
-2. リダイレクトURLを `chrome.identity.getRedirectURL()` の値に設定
-   - 例: `https://<EXTENSION_ID>.chromiumapp.org/`
-3. `src/config.example.js` を `src/config.js` という名前でコピー
-4. `src/config.js` に **Client ID** を設定
+同梱するClient IDを変更する場合は、Twitch開発者コンソールでこの拡張用のアプリを作成し、リダイレクトURLを`chrome.identity.getRedirectURL()`の値に設定してから`src/config.js`を更新してください。
 
-```js
-export const CLIENT_ID = "YOUR_TWITCH_CLIENT_ID";
-```
-
-5. 必要スコープは `channel:manage:broadcast`
+- リダイレクトURL例: `https://<EXTENSION_ID>.chromiumapp.org/`
+- 必要スコープ: `channel:manage:broadcast`
 
 注: 本プロジェクトは現在 **Implicit Grant Flow** (`response_type=token`) を使用しています。これはクライアントサイド拡張機能にとってシンプルですが、アクセストークンの有効期限が比較的短く、リフレッシュトークンは提供されません。「invalid client credentials」エラーを回避するため、PKCEロジックは削除されました。
 
@@ -40,9 +33,9 @@ export const CLIENT_ID = "YOUR_TWITCH_CLIENT_ID";
 3. 拡張機能アイコンからログイン
 
 ### 設定メモ
-- トークンや設定は `chrome.storage.local` に保存されます
-- `src/config.js` はローカル専用で、Gitの追跡対象外です
-- Client IDのテンプレートを変更する場合は `src/config.example.js` を更新してください
+- Twitch公式ではClient IDは公開情報とされているため、`src/config.js`をGitで管理します
+- アクセストークンや設定は`chrome.storage.local`に保存されます
+- Client Secret、アクセストークン、リフレッシュトークンは公開情報ではありません
 - Twitch Client Secretはこのリポジトリにコミットしないでください
 
 ### テンプレート変数
@@ -79,19 +72,12 @@ X投稿には従来どおりタイトルと配信URLが自動で追加されま�
 - Twitch account with permission to manage broadcast settings
 
 ## OAuth setup (required)
-This extension uses Twitch OAuth via `chrome.identity.launchWebAuthFlow`. You must register your own Twitch application and set the Client ID in a local configuration file.
+This extension uses Twitch OAuth via `chrome.identity.launchWebAuthFlow`. The Twitch Client ID is bundled in `src/config.js`.
 
-1. Create a Twitch application in the Twitch developer console.
-2. Set the OAuth redirect URL to the value returned by `chrome.identity.getRedirectURL()`.
-   - For an installed extension, this looks like `https://<EXTENSION_ID>.chromiumapp.org/`.
-3. Copy `src/config.example.js` to `src/config.js`.
-4. Set the **Client ID** in `src/config.js`:
+To replace the bundled Client ID, register an app specifically for this extension in the Twitch developer console, set its OAuth redirect URL to the value returned by `chrome.identity.getRedirectURL()`, and then update `src/config.js`.
 
-```js
-export const CLIENT_ID = "YOUR_TWITCH_CLIENT_ID";
-```
-
-5. The required scope is `channel:manage:broadcast`.
+- Redirect URL example: `https://<EXTENSION_ID>.chromiumapp.org/`
+- Required scope: `channel:manage:broadcast`
 
 Note: This project uses the **Implicit Grant Flow** (`response_type=token`). This is simpler for client-side extensions but means access tokens are short-lived and no refresh token is provided. PKCE logic has been removed to simplify the authentication process and avoid "invalid client credentials" errors.
 
@@ -101,9 +87,9 @@ Note: This project uses the **Implicit Grant Flow** (`response_type=token`). Thi
 3. Click the extension icon and log in.
 
 ## Configuration notes
-- Tokens and preferences are stored in `chrome.storage.local` on your device.
-- `src/config.js` is local-only and excluded from Git tracking.
-- Update `src/config.example.js` when changing the configuration template.
+- Twitch considers Client IDs public, so `src/config.js` is tracked in Git.
+- Access tokens and preferences are stored in `chrome.storage.local`.
+- Client secrets, access tokens, and refresh tokens are not public.
 - Do not commit a Twitch Client Secret to this repository.
 
 ## Template variables

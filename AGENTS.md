@@ -16,8 +16,7 @@
 - `src/api.js`: Twitch API 呼び出し。
 - `src/storage.js`: `chrome.storage.local` と実行時の配信状態の管理。
 - `src/utils.js`: タグの正規化、テンプレート変数の展開、X投稿文の組み立てなど、Chrome API に依存しない共通処理。
-- `src/config.example.js`: コミット対象の設定テンプレート。実際のClient IDは含めません。
-- `src/config.js`: Twitch Client IDを保持するローカル専用ファイル。Gitの追跡対象外ですが、拡張機能の実行には必要です。
+- `src/config.js`: Twitch公式で公開情報とされているClient IDを保持する、Git管理対象の設定ファイル。
 
 ## 変更時のルール
 
@@ -29,8 +28,8 @@
 - 1回の操作でカテゴリ、タグ、タイトルを更新する場合は、`updateChannelInfo` の1回のPATCHにまとめてください。同じチャンネルへの連続PATCHはTwitchの「updating too fast」制限を招きます。
 - HTTP 429になった書き込みを即時に自動再送しないでください。ユーザーへ待機を案内し、必要なら `Ratelimit-Reset` を参照してください。
 - 権限、`host_permissions`、OAuth スコープは必要最小限にし、追加や拡大の理由を明確にしてください。
-- `src/config.js` がない場合は `src/config.example.js` をコピーして作成してください。既存の `src/config.js` を依頼なく上書きしないでください。
-- 実際のClient IDが入った `src/config.js` は、強制追加を含めてステージやコミットをしないでください。設定テンプレートの変更だけを `src/config.example.js` に反映してください。
+- `src/config.js`のClient IDは公開可能ですが、この拡張用に登録したTwitchアプリの値だけを使用してください。
+- Client IDとClient Secretを混同しないでください。Client Secretはソースファイルへ追加しないでください。
 - Client Secret、アクセストークン、リフレッシュトークンなどの秘密情報は、どのファイルにもコミットしないでください。
 - 認証情報をログへ出さないでください。保存が必要な設定は既存どおり `chrome.storage.local` を使用してください。
 - 設定場所や利用手順を変更した場合は `README.md` も同時に更新してください。

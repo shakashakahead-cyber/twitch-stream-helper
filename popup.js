@@ -67,12 +67,14 @@ const toast = document.getElementById("toast");
 
 let currentGameId = "";
 let currentGameName = "";
+let currentGameBoxArtUrl = "";
 let currentTags = [];
 let currentStreamTitle = "";
 let currentUserLogin = "";
 let titleSyncState = "idle";
 let titleUpdateInFlight = null;
 let titleUpdateQueued = false;
+let categoryUpdateInFlight = false;
 
 const SEARCH_DEBOUNCE_MS = 250;
 let searchTimer = null;
@@ -248,6 +250,7 @@ titleInput.addEventListener("keydown", (event) => {
 function setCategory(name, boxArtUrlTemplate, id = "") {
   currentGameName = name;
   currentGameId = id || "";
+  currentGameBoxArtUrl = boxArtUrlTemplate || "";
 
   gameInput.style.display = "none";
   gameThumbnail.style.display = "none";
@@ -287,14 +290,12 @@ function setCategory(name, boxArtUrlTemplate, id = "") {
   selectedCategory.appendChild(removeBtn);
 
   removeBtn.addEventListener("click", () => {
+    if (categoryUpdateInFlight) return;
     selectedCategory.style.display = "none";
     gameInput.style.display = "block";
     gameInput.value = "";
     gameThumbnail.style.display = "none";
-    currentGameName = "";
-    currentGameId = "";
-    renderTags([]);
-    updateTemplatePreviews();
+    gameInput.focus();
   });
 
   tagSection.style.display = "block";
@@ -327,7 +328,9 @@ function renderGameSuggestions(games) {
     li.appendChild(span);
 
     li.addEventListener("click", () => {
-      setCategory(g.name, g.box_art_url, g.id);
+      if (categoryUpdateInFlight) return;
+      categoryUpdateInFlight = true;
+      gameInput.disabled = true;
       gameSuggestions.style.display = "none";
       const titleTemplate = titleTemplateUses([
         "category", "category_hashtag", "tags", "tag_hashtags"
@@ -335,9 +338,10 @@ function renderGameSuggestions(games) {
       chrome.runtime.sendMessage(
         { action: "updateCategory", game: g.name, gameId: g.id, titleTemplate },
         (res) => {
+          categoryUpdateInFlight = false;
+          gameInput.disabled = false;
           if (res && res.success) {
-            currentGameId = res.game_id || g.id;
-            currentGameName = res.game_name || g.name;
+            setCategory(res.game_name || g.name, g.box_art_url, res.game_id || g.id);
             renderTags(res.tags || []);
 
             if (typeof res.title === "string") {
@@ -354,6 +358,12 @@ function renderGameSuggestions(games) {
               showToast(chrome.i18n.getMessage("toastCategorySwitched", g.name));
             }
           } else {
+            if (currentGameName) {
+              setCategory(currentGameName, currentGameBoxArtUrl, currentGameId);
+            } else {
+              gameInput.style.display = "block";
+              gameInput.focus();
+            }
             showToast(res?.error || chrome.i18n.getMessage("toastCategoryUpdateFailed"), "error");
           }
         }
@@ -649,6 +659,7 @@ logoutBtn.addEventListener("click", () => {
     gameThumbnail.style.display = "none";
     currentGameId = "";
     currentGameName = "";
+    currentGameBoxArtUrl = "";
     currentStreamTitle = "";
     currentUserLogin = "";
     titleSyncState = "idle";
