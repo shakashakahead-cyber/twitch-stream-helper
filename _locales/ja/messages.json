@@ -3,6 +3,10 @@
     "message": "Twitch Stream Helper",
     "description": "拡張機能の名前"
   },
+  "appSubtitle": {
+    "message": "配信設定をひとつの画面で",
+    "description": "ポップアップのヘッダーに表示する短い説明"
+  },
   "extensionDescription": {
     "message": "Twitch配信管理を便利にする拡張機能",
     "description": "拡張機能の説明"
@@ -15,13 +19,69 @@
     "message": "ログアウト",
     "description": "ログアウトボタン"
   },
+  "connectedStatus": {
+    "message": "接続中",
+    "description": "Twitch接続中に表示するステータス"
+  },
+  "loginPrompt": {
+    "message": "Twitchにログインして、タイトル・カテゴリ・タグ・X投稿をひとつの画面で管理できます。",
+    "description": "ログイン前に表示する案内"
+  },
   "streamTitleLabel": {
     "message": "配信タイトル",
     "description": "配信タイトルのラベル"
   },
+  "titleSectionDescription": {
+    "message": "入力欄からフォーカスを外すか、Enterキーで自動反映します。",
+    "description": "配信タイトルセクションの説明"
+  },
+  "expandedLengthLabel": {
+    "message": "展開後",
+    "description": "展開後タイトルの文字数ラベル"
+  },
+  "currentTwitchTitleLabel": {
+    "message": "現在のTwitchタイトル",
+    "description": "現在Twitchに反映されているタイトルのラベル"
+  },
+  "titleSyncPending": {
+    "message": "未反映",
+    "description": "タイトル編集がまだ反映されていない場合の状態"
+  },
+  "titleSyncing": {
+    "message": "反映中…",
+    "description": "タイトルを反映している途中の状態"
+  },
+  "titleSyncSynced": {
+    "message": "反映済み",
+    "description": "タイトルがTwitchと一致している状態"
+  },
+  "titleSyncFailed": {
+    "message": "反映失敗",
+    "description": "タイトルの反映に失敗した状態"
+  },
+  "templatePreviewLabel": {
+    "message": "プレビュー:",
+    "description": "テンプレート展開結果のラベル"
+  },
+  "templateVariablesLabel": {
+    "message": "テンプレート変数",
+    "description": "テンプレート変数挿入ボタンのラベル"
+  },
+  "titleTemplateHint": {
+    "message": "変数をクリックすると挿入できます。カテゴリとタグの変数は、その値を変更したときに自動で再適用されます。",
+    "description": "配信タイトルテンプレートの説明"
+  },
+  "postTemplateHint": {
+    "message": "変数を使ってX投稿文の内容や配置を調整できます。",
+    "description": "X投稿テンプレートの説明"
+  },
   "categoryLabel": {
     "message": "カテゴリ",
     "description": "カテゴリのラベル"
+  },
+  "categorySectionDescription": {
+    "message": "現在の配信カテゴリを検索して切り替えます。",
+    "description": "カテゴリセクションの説明"
   },
   "categorySearchPlaceholder": {
     "message": "カテゴリを検索",
@@ -30,6 +90,10 @@
   "tagsLabel": {
     "message": "タグ",
     "description": "タグセクションのラベル"
+  },
+  "tagsSectionDescription": {
+    "message": "カテゴリごとのタグを保存してTwitchへ反映します。",
+    "description": "タグセクションの説明"
   },
   "newTagPlaceholder": {
     "message": "新しいタグ",
@@ -40,8 +104,16 @@
     "description": "タグ追加ボタン"
   },
   "postToXSectionLabel": {
-    "message": "追加テキスト(X投稿時)",
-    "description": "X投稿時のカスタムテキストエリアのラベル"
+    "message": "X投稿",
+    "description": "X投稿セクションの見出し"
+  },
+  "postSectionDescription": {
+    "message": "投稿内容を確認してXの作成画面を開きます。",
+    "description": "X投稿セクションの説明"
+  },
+  "postTextLabel": {
+    "message": "追加テキスト",
+    "description": "X投稿用の追加テキスト入力欄のラベル"
   },
   "customHashtagsPlaceholder": {
     "message": "#配信開始",
@@ -51,9 +123,24 @@
     "message": "カテゴリをハッシュタグ化",
     "description": "カテゴリをハッシュタグにするチェックボックス"
   },
+  "excludeStreamUrlCheckbox": {
+    "message": "配信URLを付けない",
+    "description": "X投稿からTwitch配信URLを除外するチェックボックス"
+  },
   "postToXButton": {
     "message": "Xに投稿",
     "description": "X投稿ボタン"
+  },
+  "removeCategoryButtonLabel": {
+    "message": "カテゴリを変更",
+    "description": "カテゴリ変更ボタンの読み上げラベル"
+  },
+  "removeTagButtonLabel": {
+    "message": "$tagName$を削除",
+    "description": "タグ削除ボタンの読み上げラベル",
+    "placeholders": {
+      "tagName": { "content": "$1" }
+    }
   },
   "toastTitleUpdated": {
     "message": "タイトルを更新しました",
@@ -146,6 +233,10 @@
       "text": { "content": "$2" }
     }
   },
+  "errorTwitchRateLimited": {
+    "message": "Twitchへの更新が速すぎます。少し待ってからもう一度お試しください。",
+    "description": "Twitch APIの更新が一時的に制限された場合のエラー"
+  },
   "errorCsrf": {
     "message": "state 不一致（CSRF対策）",
     "description": "OAuth state不一致エラー"
@@ -180,5 +271,13 @@
   "errorTagLimit": {
     "message": "タグは最大10個までです",
     "description": "タグ数の上限エラー"
+  },
+  "errorTitleTooLong": {
+    "message": "展開後のタイトルは$count$文字です。最大$max$文字まで設定できます。",
+    "description": "展開後の配信タイトルがTwitchの上限を超えた場合のエラー",
+    "placeholders": {
+      "count": { "content": "$1" },
+      "max": { "content": "$2" }
+    }
   }
 }

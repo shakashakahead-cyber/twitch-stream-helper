@@ -2,7 +2,11 @@
 // Twitch Stream Helper - popup.js
 // ==============================
 
-import { normalizeTagEntry, normalizeTagList } from "./src/utils.js";
+import {
+  applyTemplate, composeXPost, createTemplateVariables,
+  normalizeTagEntry, normalizeTagList,
+  POST_TEMPLATE_VARIABLES, TITLE_TEMPLATE_VARIABLES
+} from "./src/utils.js";
 
 // ---- i18n replace for __MSG_...__ in HTML ----
 document.addEventListener("DOMContentLoaded", () => {
@@ -31,9 +35,15 @@ document.addEventListener("DOMContentLoaded", () => {
 const loginBtn = document.getElementById("loginTwitch");
 const logoutBtn = document.getElementById("logoutTwitch");
 const mainUI = document.getElementById("mainUI");
+const loggedOutState = document.getElementById("loggedOutState");
+const connectedBadge = document.getElementById("connectedBadge");
 
 const titleInput = document.getElementById("streamTitle");
 const titleCount = document.getElementById("titleCount");
+const titlePreview = document.getElementById("titlePreview");
+const titleTemplateVariables = document.getElementById("titleTemplateVariables");
+const titleSyncStatus = document.getElementById("titleSyncStatus");
+const currentTwitchTitle = document.getElementById("currentTwitchTitle");
 
 const gameInput = document.getElementById("game");
 const gameThumbnail = document.getElementById("gameThumbnail");
@@ -48,13 +58,23 @@ const tagSuggestions = document.getElementById("tagSuggestions");
 
 const customHashtags = document.getElementById("customHashtags");
 const includeCategoryTag = document.getElementById("includeCategoryTag");
+const excludeStreamUrl = document.getElementById("excludeStreamUrl");
 const postToXBtn = document.getElementById("postToX");
+const xPostPreview = document.getElementById("xPostPreview");
+const postTemplateVariables = document.getElementById("postTemplateVariables");
 
 const toast = document.getElementById("toast");
 
 let currentGameId = "";
 let currentGameName = "";
+let currentGameBoxArtUrl = "";
 let currentTags = [];
+let currentStreamTitle = "";
+let currentUserLogin = "";
+let titleSyncState = "idle";
+let titleUpdateInFlight = null;
+let titleUpdateQueued = false;
+let categoryUpdateInFlight = false;
 
 const SEARCH_DEBOUNCE_MS = 250;
 let searchTimer = null;
@@ -74,21 +94,163 @@ function showToast(message, type = "success") {
   }, 2500);
 }
 
+function setAuthenticatedUI(isAuthenticated) {
+  loggedOutState.style.display = isAuthenticated ? "none" : "flex";
+  connectedBadge.style.display = isAuthenticated ? "inline-flex" : "none";
+  logoutBtn.style.display = isAuthenticated ? "inline-flex" : "none";
+  mainUI.style.display = isAuthenticated ? "flex" : "none";
+}
+
+// ---- template variables ----
+function getPopupTemplateVariables() {
+  return createTemplateVariables({
+    title: currentStreamTitle,
+    categoryName: currentGameName,
+    userLogin: currentUserLogin,
+    tags: currentTags,
+  });
+}
+
+function renderTitleSyncStatus(expandedTitle) {
+  currentTwitchTitle.textContent = currentStreamTitle || "—";
+
+  let state = titleSyncState;
+  if (state === "idle") {
+    state = expandedTitle === currentStreamTitle ? "synced" : "pending";
+  }
+
+  const messageKeys = {
+    pending: "titleSyncPending",
+    syncing: "titleSyncing",
+    synced: "titleSyncSynced",
+    failed: "titleSyncFailed",
+  };
+  titleSyncStatus.className = `sync-status ${state}`;
+  titleSyncStatus.textContent = chrome.i18n.getMessage(messageKeys[state]);
+}
+
+function updateTemplatePreviews() {
+  const variables = getPopupTemplateVariables();
+  const expandedTitle = applyTemplate(titleInput.value, variables);
+  titleCount.textContent = `${expandedTitle.length}/140`;
+  titleCount.classList.toggle("over-limit", expandedTitle.length > 140);
+  titlePreview.textContent = expandedTitle || "—";
+  renderTitleSyncStatus(expandedTitle);
+
+  const postText = composeXPost({
+    template: customHashtags.value,
+    variables,
+    includeCategory: includeCategoryTag.checked,
+    includeStreamUrl: !excludeStreamUrl.checked,
+  });
+  xPostPreview.textContent = postText || "—";
+}
+
+function insertTemplateVariable(input, variableName) {
+  const token = `{${variableName}}`;
+  const start = Number.isInteger(input.selectionStart) ? input.selectionStart : input.value.length;
+  const end = Number.isInteger(input.selectionEnd) ? input.selectionEnd : input.value.length;
+  input.setRangeText(token, start, end, "end");
+  input.dispatchEvent(new Event("input", { bubbles: true }));
+  input.focus();
+}
+
+function renderTemplateVariableButtons(container, input, variableNames) {
+  variableNames.forEach((variableName) => {
+    const button = document.createElement("button");
+    button.type = "button";
+    button.className = "template-variable";
+    button.textContent = `{${variableName}}`;
+    button.addEventListener("mousedown", (event) => event.preventDefault());
+    button.addEventListener("click", () => insertTemplateVariable(input, variableName));
+    container.appendChild(button);
+  });
+}
+
+function loadTitleTemplate(fallbackTitle) {
+  chrome.storage.local.get(["titleTemplate"], (result) => {
+    titleInput.value = typeof result.titleTemplate === "string"
+      ? result.titleTemplate
+      : fallbackTitle;
+    titleSyncState = "idle";
+    updateTemplatePreviews();
+  });
+}
+
+function titleTemplateUses(variableNames) {
+  return variableNames.some((name) => titleInput.value.includes(`{${name}}`));
+}
+
+function applyTitleTemplate({ showSuccess = true } = {}) {
+  if (titleUpdateInFlight) {
+    titleUpdateQueued = true;
+    return titleUpdateInFlight;
+  }
+
+  const template = titleInput.value;
+  const expandedTitle = applyTemplate(template, getPopupTemplateVariables());
+  if (expandedTitle === currentStreamTitle) {
+    titleSyncState = "idle";
+    updateTemplatePreviews();
+    return Promise.resolve({ success: true, title: currentStreamTitle, skipped: true });
+  }
+
+  chrome.storage.local.set({ titleTemplate: template });
+  titleSyncState = "syncing";
+  updateTemplatePreviews();
+
+  const request = new Promise((resolve) => {
+    chrome.runtime.sendMessage({ action: "updateTitle", title: template }, (res) => {
+      if (res && res.success) {
+        currentStreamTitle = res.title || "";
+        titleSyncState = "idle";
+        updateTemplatePreviews();
+        if (showSuccess) showToast(chrome.i18n.getMessage("toastTitleUpdated"));
+      } else {
+        titleSyncState = titleInput.value === template ? "failed" : "idle";
+        updateTemplatePreviews();
+        showToast((res && res.error) || chrome.i18n.getMessage("toastTitleUpdateFailed"), "error");
+      }
+      resolve(res || { success: false });
+    });
+  });
+
+  titleUpdateInFlight = request;
+  request.finally(() => {
+    if (titleUpdateInFlight !== request) return;
+    titleUpdateInFlight = null;
+    if (titleUpdateQueued) {
+      titleUpdateQueued = false;
+      applyTitleTemplate({ showSuccess });
+    }
+  });
+  return request;
+}
+
+renderTemplateVariableButtons(titleTemplateVariables, titleInput, TITLE_TEMPLATE_VARIABLES);
+renderTemplateVariableButtons(postTemplateVariables, customHashtags, POST_TEMPLATE_VARIABLES);
+
 // ---- title ----
 titleInput.addEventListener("input", () => {
-  titleCount.textContent = `${titleInput.value.length}/140`;
+  chrome.storage.local.set({ titleTemplate: titleInput.value });
+  if (!titleUpdateInFlight) titleSyncState = "idle";
+  updateTemplatePreviews();
 });
 titleInput.addEventListener("change", () => {
-  chrome.runtime.sendMessage({ action: "updateTitle", title: titleInput.value }, (res) => {
-    if (res && res.success) showToast(chrome.i18n.getMessage("toastTitleUpdated"));
-    else showToast(chrome.i18n.getMessage("toastTitleUpdateFailed"), "error");
-  });
+  applyTitleTemplate();
+});
+titleInput.addEventListener("keydown", (event) => {
+  if (event.key === "Enter") {
+    event.preventDefault();
+    applyTitleTemplate();
+  }
 });
 
 // ---- category ----
 function setCategory(name, boxArtUrlTemplate, id = "") {
   currentGameName = name;
   currentGameId = id || "";
+  currentGameBoxArtUrl = boxArtUrlTemplate || "";
 
   gameInput.style.display = "none";
   gameThumbnail.style.display = "none";
@@ -120,22 +282,24 @@ function setCategory(name, boxArtUrlTemplate, id = "") {
     selectedCategory.appendChild(label);
   }
 
-  const removeBtn = document.createElement("span");
+  const removeBtn = document.createElement("button");
+  removeBtn.type = "button";
   removeBtn.className = "remove-btn";
   removeBtn.textContent = "×";
+  removeBtn.setAttribute("aria-label", chrome.i18n.getMessage("removeCategoryButtonLabel"));
   selectedCategory.appendChild(removeBtn);
 
   removeBtn.addEventListener("click", () => {
+    if (categoryUpdateInFlight) return;
     selectedCategory.style.display = "none";
     gameInput.style.display = "block";
     gameInput.value = "";
     gameThumbnail.style.display = "none";
-    currentGameName = "";
-    currentGameId = "";
-    renderTags([]);
+    gameInput.focus();
   });
 
   tagSection.style.display = "block";
+  updateTemplatePreviews();
 }
 
 function renderGameSuggestions(games) {
@@ -164,15 +328,27 @@ function renderGameSuggestions(games) {
     li.appendChild(span);
 
     li.addEventListener("click", () => {
-      setCategory(g.name, g.box_art_url, g.id);
+      if (categoryUpdateInFlight) return;
+      categoryUpdateInFlight = true;
+      gameInput.disabled = true;
       gameSuggestions.style.display = "none";
+      const titleTemplate = titleTemplateUses([
+        "category", "category_hashtag", "tags", "tag_hashtags"
+      ]) ? titleInput.value : null;
       chrome.runtime.sendMessage(
-        { action: "updateCategory", game: g.name, gameId: g.id },
+        { action: "updateCategory", game: g.name, gameId: g.id, titleTemplate },
         (res) => {
+          categoryUpdateInFlight = false;
+          gameInput.disabled = false;
           if (res && res.success) {
-            currentGameId = res.game_id || g.id;
-            currentGameName = res.game_name || g.name;
+            setCategory(res.game_name || g.name, g.box_art_url, res.game_id || g.id);
             renderTags(res.tags || []);
+
+            if (typeof res.title === "string") {
+              currentStreamTitle = res.title;
+              titleSyncState = "idle";
+              updateTemplatePreviews();
+            }
 
             if (res.tagSyncFailed) {
               showToast(chrome.i18n.getMessage("toastTagsUpdateFailed"), "error");
@@ -182,6 +358,12 @@ function renderGameSuggestions(games) {
               showToast(chrome.i18n.getMessage("toastCategorySwitched", g.name));
             }
           } else {
+            if (currentGameName) {
+              setCategory(currentGameName, currentGameBoxArtUrl, currentGameId);
+            } else {
+              gameInput.style.display = "block";
+              gameInput.focus();
+            }
             showToast(res?.error || chrome.i18n.getMessage("toastCategoryUpdateFailed"), "error");
           }
         }
@@ -276,6 +458,7 @@ function renderTags(tags) {
   currentTags = normalizeTagList(tags); // Use imported utility
   tagList.innerHTML = "";
   tagSection.style.display = "block";
+  updateTemplatePreviews();
   if (currentTags.length === 0) return;
 
   currentTags.forEach((tag) => {
@@ -283,9 +466,11 @@ function renderTags(tags) {
     chip.className = "tag-item";
     chip.textContent = tag.name;
 
-    const remove = document.createElement("span");
+    const remove = document.createElement("button");
+    remove.type = "button";
     remove.className = "tag-remove";
     remove.textContent = "×";
+    remove.setAttribute("aria-label", chrome.i18n.getMessage("removeTagButtonLabel", tag.name));
     remove.addEventListener("click", () => removeTag(tag));
 
     chip.appendChild(remove);
@@ -322,14 +507,24 @@ newTagInput.addEventListener("keypress", (e) => {
 });
 function updateTags(tags) {
   const gameId = currentGameId || "__NO_CATEGORY__";
+  const titleTemplate = titleTemplateUses(["tags", "tag_hashtags"])
+    ? titleInput.value
+    : null;
   chrome.runtime.sendMessage(
-    { action: "updateTags", gameId, tags },
+    { action: "updateTags", gameId, tags, titleTemplate },
     (res) => {
       if (res && res.success) {
         const resolved = Array.isArray(res.tags) ? res.tags : tags;
         renderTags(resolved);
+        if (typeof res.title === "string") {
+          currentStreamTitle = res.title;
+          titleSyncState = "idle";
+          updateTemplatePreviews();
+        }
         if (res.syncFailed) {
-          showToast(chrome.i18n.getMessage("toastTagsUpdateFailed"), "error");
+          showToast(res.syncError || chrome.i18n.getMessage("toastTagsUpdateFailed"), "error");
+        } else if (res.titleTemplateError) {
+          showToast(res.titleTemplateError, "error");
         } else {
           showToast(chrome.i18n.getMessage("toastTagsUpdated"));
         }
@@ -342,14 +537,16 @@ function updateTags(tags) {
 
 // ---- X投稿 ----
 postToXBtn.addEventListener("click", () => {
+  postToXBtn.disabled = true;
   chrome.runtime.sendMessage(
     {
       action: "postToX",
       text: customHashtags.value || "",
       includeCategory: includeCategoryTag.checked,
-      currentCategory: currentGameName,
+      excludeStreamUrl: excludeStreamUrl.checked,
     },
     (res) => {
+      postToXBtn.disabled = false;
       if (res && res.success) showToast(chrome.i18n.getMessage("toastXPostOpened"), "success");
       else showToast(chrome.i18n.getMessage("toastXPostFailed"), "error");
     }
@@ -359,35 +556,51 @@ postToXBtn.addEventListener("click", () => {
 // ---- 永続化 ----
 customHashtags.addEventListener("input", () => {
   chrome.storage.local.set({ customHashtags: customHashtags.value });
+  updateTemplatePreviews();
 });
 chrome.storage.local.get(["customHashtags"], (r) => {
   if (r && typeof r.customHashtags === "string") {
     customHashtags.value = r.customHashtags;
   }
+  updateTemplatePreviews();
 });
 
 includeCategoryTag.addEventListener("change", () => {
   chrome.storage.local.set({ includeCategory: includeCategoryTag.checked });
+  updateTemplatePreviews();
 });
 chrome.storage.local.get(["includeCategory"], (r) => {
   if (typeof r.includeCategory === "boolean") {
     includeCategoryTag.checked = r.includeCategory;
   }
+  updateTemplatePreviews();
+});
+
+excludeStreamUrl.addEventListener("change", () => {
+  chrome.storage.local.set({ excludeStreamUrl: excludeStreamUrl.checked });
+  updateTemplatePreviews();
+});
+chrome.storage.local.get(["excludeStreamUrl"], (r) => {
+  if (typeof r.excludeStreamUrl === "boolean") {
+    excludeStreamUrl.checked = r.excludeStreamUrl;
+  }
+  updateTemplatePreviews();
 });
 
 // ---- login/logout ----
 loginBtn.addEventListener("click", () => {
+  loginBtn.disabled = true;
   chrome.runtime.sendMessage({ action: "authenticate" }, (res) => {
+    loginBtn.disabled = false;
     if (res && res.success) {
-      loginBtn.style.display = "none";
-      logoutBtn.style.display = "inline-block";
-      mainUI.style.display = "block";
+      setAuthenticatedUI(true);
       showToast(chrome.i18n.getMessage("toastLoginSuccess"));
 
       chrome.runtime.sendMessage({ action: "getStreamInfo" }, (r) => {
         if (r && r.success) {
-          titleInput.value = r.title || "";
-          titleCount.textContent = `${titleInput.value.length}/140`;
+          currentStreamTitle = r.title || "";
+          currentUserLogin = r.user_login || "";
+          loadTitleTemplate(currentStreamTitle);
 
           if (r.game_name) {
             setCategory(r.game_name, r.game_thumbnail, r.game_id);
@@ -431,10 +644,10 @@ loginBtn.addEventListener("click", () => {
   });
 });
 logoutBtn.addEventListener("click", () => {
+  logoutBtn.disabled = true;
   chrome.runtime.sendMessage({ action: "logout" }, () => {
-    loginBtn.style.display = "inline-block";
-    logoutBtn.style.display = "none";
-    mainUI.style.display = "none";
+    logoutBtn.disabled = false;
+    setAuthenticatedUI(false);
     showToast(chrome.i18n.getMessage("toastLogoutSuccess"));
 
     closeSuggestions();
@@ -446,19 +659,23 @@ logoutBtn.addEventListener("click", () => {
     gameThumbnail.style.display = "none";
     currentGameId = "";
     currentGameName = "";
+    currentGameBoxArtUrl = "";
+    currentStreamTitle = "";
+    currentUserLogin = "";
+    titleSyncState = "idle";
     renderTags([]);
+    updateTemplatePreviews();
   });
 });
 
 // ---- initial ----
 chrome.runtime.sendMessage({ action: "getStreamInfo" }, (r) => {
   if (r && r.success) {
-    loginBtn.style.display = "none";
-    logoutBtn.style.display = "inline-block";
-    mainUI.style.display = "block";
+    setAuthenticatedUI(true);
 
-    titleInput.value = r.title || "";
-    titleCount.textContent = `${titleInput.value.length}/140`;
+    currentStreamTitle = r.title || "";
+    currentUserLogin = r.user_login || "";
+    loadTitleTemplate(currentStreamTitle);
 
     if (r.game_name) {
       setCategory(r.game_name, r.game_thumbnail, r.game_id);
@@ -495,9 +712,7 @@ chrome.runtime.sendMessage({ action: "getStreamInfo" }, (r) => {
       showToast(chrome.i18n.getMessage("toastCurrentCategorySaved", r.game_name));
     }
   } else {
-    loginBtn.style.display = "inline-block";
-    logoutBtn.style.display = "none";
-    mainUI.style.display = "none";
+    setAuthenticatedUI(false);
   }
 });
 
