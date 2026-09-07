@@ -4,7 +4,7 @@
 
 - Twitch の配信タイトル、カテゴリ、タグを管理し、X の投稿画面を開く Chrome 拡張です。
 - Manifest V3 と Vanilla JavaScript（ES Modules）で構成されています。
-- ビルド工程、パッケージマネージャー、自動テストはありません。リポジトリのルートを Chrome で「パッケージ化されていない拡張機能」として読み込みます。
+- ビルド工程、パッケージマネージャーはありません。固定コメント機能には Node.js 標準のモックテストがあります（実行方法はREADME）。リポジトリのルートを Chrome で「パッケージ化されていない拡張機能」として読み込みます。
 - `default_locale` は英語です。ユーザー向け文言は `_locales/en/messages.json` と `_locales/ja/messages.json` で管理します。
 
 ## 主なファイル

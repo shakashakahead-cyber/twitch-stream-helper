@@ -18,6 +18,14 @@ let accessToken = null;
 let refreshToken = null;
 let accessTokenExpiresAt = 0;
 let refreshingTokenPromise = null;
+let tokenValidation = null;
+export const CHAT_SCOPE = "user:write:chat";
+export const PIN_SCOPE = "moderator:manage:chat_messages";
+const REQUIRED_SCOPES = Object.freeze(["channel:manage:broadcast", CHAT_SCOPE, PIN_SCOPE]);
+
+export function hasRequiredScopes(authorization) {
+    return REQUIRED_SCOPES.every(scope => authorization.scopes.includes(scope));
+}
 
 // ---- Token Management ----
 
@@ -31,13 +39,13 @@ export function getRefreshToken() {
 
 export async function loadTokens() {
     const data = await readLocal(["accessToken", "refreshToken", "accessTokenExpiresAt"]);
-    accessToken = data.accessToken || accessToken || null;
-    refreshToken = data.refreshToken || refreshToken || null;
-    accessTokenExpiresAt = data.accessTokenExpiresAt || accessTokenExpiresAt || 0;
-    console.log("Auth: Tokens loaded.", { hasAccess: !!accessToken, hasRefresh: !!refreshToken });
+    accessToken = data.accessToken || null;
+    refreshToken = data.refreshToken || null;
+    accessTokenExpiresAt = data.accessTokenExpiresAt || 0;
 }
 
 export async function saveTokens(tokenResponse) {
+    tokenValidation = null;
     accessToken = tokenResponse.access_token || null;
     if (tokenResponse.refresh_token) {
         refreshToken = tokenResponse.refresh_token;
@@ -49,10 +57,37 @@ export async function saveTokens(tokenResponse) {
 }
 
 export async function clearTokens() {
+    tokenValidation = null;
     accessToken = null;
     refreshToken = null;
     accessTokenExpiresAt = 0;
     await removeLocal(["accessToken", "refreshToken", "accessTokenExpiresAt"]);
+}
+
+// Validate on each worker session and at least hourly while it remains active.
+// This also discovers scopes granted to tokens from older extension versions.
+export async function getTokenAuthorization() {
+    await ensureAccessToken();
+    const token = accessToken;
+    if (tokenValidation?.token === token && Date.now() - tokenValidation.checkedAt < 3600000) {
+        return tokenValidation.info;
+    }
+    const response = await fetch("https://id.twitch.tv/oauth2/validate", {
+        headers: { Authorization: `OAuth ${token}` },
+    });
+    if (response.status === 401) {
+        await clearTokens();
+        throw new Error(chrome.i18n.getMessage("errorLoginRequired"));
+    }
+    if (!response.ok) throw new Error(chrome.i18n.getMessage("errorCommentAuthCheck"));
+    const data = await response.json();
+    if (data.client_id !== CLIENT_ID || !data.user_id) {
+        await clearTokens();
+        throw new Error(chrome.i18n.getMessage("errorLoginRequired"));
+    }
+    const info = { userId: data.user_id, scopes: Array.isArray(data.scopes) ? data.scopes : [] };
+    tokenValidation = { token, info, checkedAt: Date.now() };
+    return info;
 }
 
 export function isTokenExpiringSoon() {
@@ -118,7 +153,7 @@ export async function authenticate() {
         return { success: false, error: "src/config.js の Client ID が設定されていません。" };
     }
 
-    const state = Math.random().toString(36).slice(2) + Date.now().toString(36);
+    const state = crypto.randomUUID();
     await writeLocal({ oauth_state: state });
 
     const authUrl =
@@ -126,7 +161,8 @@ export async function authenticate() {
         `?client_id=${encodeURIComponent(CLIENT_ID)}` +
         `&redirect_uri=${encodeURIComponent(redirectUri)}` +
         `&response_type=token` +
-        `&scope=${encodeURIComponent("channel:manage:broadcast")}` +
+        `&scope=${encodeURIComponent(REQUIRED_SCOPES.join(" "))}` +
+        `&force_verify=true` +
         `&state=${encodeURIComponent(state)}`;
 
     return new Promise((resolve) => {
@@ -140,42 +176,41 @@ export async function authenticate() {
                 return;
             }
 
-            const url = new URL(redirectUrl);
-            const hashParams = new URLSearchParams(url.hash.substring(1));
-
-            const returnedState = hashParams.get("state");
-            const accessTokenFromUrl = hashParams.get("access_token");
-            const error = hashParams.get("error");
-            const errorDescription = hashParams.get("error_description");
-
-            if (error) {
-                console.error("❌ Auth Flow Error (Implicit):", error, errorDescription);
-                resolve({ success: false, error: errorDescription || error });
-                return;
-            }
-
-            const store = await readLocal(["oauth_state"]);
-            if (!returnedState || returnedState !== store.oauth_state) {
-                resolve({ success: false, error: chrome.i18n.getMessage("errorCsrf") });
-                return;
-            }
-            await removeLocal(["oauth_state"]);
-
-            if (!accessTokenFromUrl) {
-                resolve({ success: false, error: chrome.i18n.getMessage("errorTokenFetch") });
-                return;
-            }
-
             try {
+                const url = new URL(redirectUrl);
+                const hashParams = new URLSearchParams(url.hash.substring(1));
+                const returnedState = hashParams.get("state");
+                const accessTokenFromUrl = hashParams.get("access_token");
+                const error = hashParams.get("error");
+                if (error) {
+                    resolve({ success: false, error: hashParams.get("error_description") || error });
+                    return;
+                }
+                const store = await readLocal(["oauth_state"]);
+                if (!returnedState || returnedState !== store.oauth_state) {
+                    resolve({ success: false, error: chrome.i18n.getMessage("errorCsrf") });
+                    return;
+                }
+                await removeLocal(["oauth_state"]);
+                if (!accessTokenFromUrl) {
+                    resolve({ success: false, error: chrome.i18n.getMessage("errorTokenFetch") });
+                    return;
+                }
                 const tokenData = {
                     access_token: accessTokenFromUrl,
                     refresh_token: null,
-                    expires_in: 86400 * 60
+                    expires_in: Number(hashParams.get("expires_in")) || 0
                 };
+                // A new implicit login must not retain another account's refresh token.
+                refreshToken = null;
                 await saveTokens(tokenData);
+                const authorization = await getTokenAuthorization();
+                if (!hasRequiredScopes(authorization)) {
+                    resolve({ success: false, requiresReauth: true, error: chrome.i18n.getMessage("errorCommentPermissions") });
+                    return;
+                }
                 resolve({ success: true });
-            } catch (e) {
-                console.error("❌ Token Save Exception:", e);
+            } catch (_) {
                 resolve({ success: false, error: chrome.i18n.getMessage("errorTokenFetch") });
             }
         });

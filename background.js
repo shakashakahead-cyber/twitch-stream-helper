@@ -9,17 +9,197 @@ import {
 import {
   hydrateStreamState, updateStreamState, getStreamState,
   cacheCategoryInfo, getSavedCategories, updateCategoryHistory,
-  getSavedTags, updateSavedTags
+  getSavedTags, updateSavedTags, readLocal, writeLocal,
+  getPinnedCommentSettings, normalizePinnedCommentSettings
 } from "./src/storage.js";
 import {
-  authenticate, logout, loadTokens, getAccessToken
+  authenticate, logout, loadTokens, getAccessToken,
+  getTokenAuthorization, hasRequiredScopes, CHAT_SCOPE, PIN_SCOPE
 } from "./src/auth.js";
 import {
   getUser, getGameById, searchCategoriesApi, getTopGameRankMap,
-  getCurrentChannelTagsFromTwitch, getChannelInfo, updateChannelInfo
+  getCurrentChannelTagsFromTwitch, getChannelInfo, updateChannelInfo,
+  getLiveStream, sendChatMessage, pinChatMessage
 } from "./src/api.js";
-// Initialize tokens
-loadTokens();
+// Saved comments: polling, durable delivery records, and serialized writes.
+const COMMENT_ALARM = "pinned-comment-stream-check";
+let commentQueue = Promise.resolve();
+
+function withCommentLock(task) {
+  const pending = commentQueue.then(task);
+  commentQueue = pending.catch(() => {});
+  return pending;
+}
+
+function requireCommentScopes(authorization, pin) {
+  if (!authorization.scopes.includes(CHAT_SCOPE) || (pin && !authorization.scopes.includes(PIN_SCOPE))) {
+    throw new Error(chrome.i18n.getMessage("errorCommentPermissions"));
+  }
+}
+
+async function syncCommentAlarm() {
+  const settings = await getPinnedCommentSettings();
+  await loadTokens();
+  if (!settings.autoPost || !getAccessToken()) {
+    await chrome.alarms.clear(COMMENT_ALARM);
+    return;
+  }
+  if (!await chrome.alarms.get(COMMENT_ALARM)) {
+    await chrome.alarms.create(COMMENT_ALARM, { delayInMinutes: 1, periodInMinutes: 1 });
+  }
+}
+
+async function saveCommentStatus(status, userId = "") {
+  await writeLocal({ pinnedCommentStatus: { ...status, userId, updatedAt: Date.now() } });
+}
+
+async function getCommentPanel() {
+  const settings = await getPinnedCommentSettings();
+  const { pinnedCommentStatus } = await readLocal(["pinnedCommentStatus"]);
+  let authorization;
+  let authError = "";
+  try {
+    authorization = await getTokenAuthorization();
+  } catch (error) {
+    authError = error.message;
+  }
+  return {
+    settings,
+    canSend: authorization?.scopes.includes(CHAT_SCOPE) || false,
+    canPin: authorization?.scopes.includes(PIN_SCOPE) || false,
+    authError,
+    requiresReauth: Boolean(authorization && !hasRequiredScopes(authorization)),
+    accountMismatch: Boolean(settings.ownerId && authorization && settings.ownerId !== authorization.userId),
+    status: pinnedCommentStatus?.userId === authorization?.userId ? pinnedCommentStatus : null,
+  };
+}
+
+async function saveCommentSettings(value) {
+  const settings = normalizePinnedCommentSettings(value);
+  const texts = [settings.message, ...Object.values(settings.categoryMessages)];
+  if (texts.some(text => [...text].length > 500)) {
+    throw new Error(chrome.i18n.getMessage("errorCommentLength"));
+  }
+  if (settings.autoPost && !texts.some(text => text.trim())) {
+    throw new Error(chrome.i18n.getMessage("errorCommentEmpty"));
+  }
+  const authorization = await getTokenAuthorization();
+  if (settings.autoPost) requireCommentScopes(authorization, settings.pin);
+  settings.ownerId = authorization.userId;
+  await writeLocal({ pinnedCommentSettings: settings });
+  await syncCommentAlarm();
+  return getCommentPanel();
+}
+
+async function runPinnedComment(manual = false) {
+  const settings = await getPinnedCommentSettings();
+  if (!manual && !settings.autoPost) return;
+  const authorization = await getTokenAuthorization();
+  const userId = authorization.userId;
+  try {
+    requireCommentScopes(authorization, settings.pin);
+    if (settings.ownerId !== userId) throw new Error(chrome.i18n.getMessage("errorCommentAccount"));
+    const stream = await getLiveStream(userId);
+    if (!stream) {
+      await saveCommentStatus({ state: "offline" }, userId);
+      return;
+    }
+    if (!stream.id || !stream.started_at) throw new Error(chrome.i18n.getMessage("errorCommentStreamCheck"));
+    const key = `${userId}:${stream.id}:${stream.started_at}`;
+    const stored = await readLocal(["pinnedCommentDeliveries"]);
+    const deliveries = stored.pinnedCommentDeliveries || {};
+    let delivery = deliveries[key];
+    const persist = async () => {
+      deliveries[key] = delivery;
+      // Keep recent streams per account without evicting records for other accounts.
+      const oldKeys = Object.keys(deliveries).filter(id => id.startsWith(`${userId}:`))
+        .sort((a, b) => (deliveries[b].attemptedAt || 0) - (deliveries[a].attemptedAt || 0)).slice(100);
+      oldKeys.forEach(id => delete deliveries[id]);
+      await writeLocal({ pinnedCommentDeliveries: deliveries });
+      await saveCommentStatus(delivery, userId);
+    };
+
+    if (delivery) {
+      if (["sending", "pinning"].includes(delivery.state) || (delivery.state === "sent" && delivery.pin)) {
+        // The worker may have stopped after Twitch accepted the write.
+        delivery.state = delivery.messageId ? "pinFailed" : "unknown";
+        delivery.error = chrome.i18n.getMessage(delivery.messageId ? "commentPinInterrupted" : "commentDeliveryUnknown");
+        await persist();
+      }
+      const canRetry = manual && ["sendFailed", "pinFailed"].includes(delivery.state);
+      if (!canRetry || (delivery.retryAt && Date.now() < delivery.retryAt)) {
+        await saveCommentStatus(delivery, userId);
+        return;
+      }
+    }
+
+    if (!delivery?.messageId) {
+      const text = settings.categoryMessages[stream.game_id] || settings.message;
+      if (!text.trim()) {
+        await saveCommentStatus({ state: "empty" }, userId);
+        return;
+      }
+      if ([...text].length > 500) throw new Error(chrome.i18n.getMessage("errorCommentLength"));
+      delivery = {
+        state: "sending", streamId: stream.id, startedAt: stream.started_at,
+        attemptedAt: Date.now(), pin: settings.pin, durationSeconds: settings.durationSeconds,
+      };
+      // Persist BEFORE the POST: a restart or an ambiguous response must never resend.
+      await persist();
+      try {
+        delivery.messageId = await sendChatMessage(userId, text);
+      } catch (error) {
+        delivery.state = error.definitelyNotSent || [400, 401, 403, 422, 429].includes(error.status)
+          ? "sendFailed" : "unknown";
+        delivery.error = delivery.state === "unknown"
+          ? chrome.i18n.getMessage("commentDeliveryUnknown") : error.message;
+        delivery.retryAt = error.status === 429 ? Math.max(error.retryAt || 0, Date.now() + 60000) : 0;
+        await persist();
+        return;
+      }
+      delivery.state = "sent";
+      await persist();
+    }
+
+    if (delivery.pin) {
+      requireCommentScopes(authorization, true);
+      delivery.state = "pinning";
+      delivery.error = "";
+      await persist();
+      try {
+        await pinChatMessage(userId, delivery.messageId, delivery.durationSeconds);
+        delivery.state = "pinned";
+      } catch (error) {
+        // A previous pin may have succeeded just before worker suspension.
+        delivery.state = error.status === 409 ? "pinned" : "pinFailed";
+        delivery.error = error.status === 409 ? "" : error.message;
+        delivery.retryAt = error.status === 429 ? Math.max(error.retryAt || 0, Date.now() + 60000) : 0;
+      }
+      await persist();
+    }
+  } catch (error) {
+    await saveCommentStatus({ state: "error", error: error.message }, userId);
+    throw error;
+  }
+}
+
+function initializeCommentAlarm() {
+  withCommentLock(syncCommentAlarm).catch(() => {});
+}
+chrome.alarms.onAlarm.addListener(alarm => {
+  if (alarm.name !== COMMENT_ALARM) return;
+  withCommentLock(async () => {
+    try {
+      await runPinnedComment();
+    } catch (_) {
+      // Errors are shown in the popup. Never retry a chat write here.
+    }
+    await syncCommentAlarm();
+  }).catch(() => {});
+});
+chrome.runtime.onInstalled.addListener(initializeCommentAlarm);
+chrome.runtime.onStartup.addListener(initializeCommentAlarm);
+initializeCommentAlarm();
 
 async function refreshStreamState() {
   const user = await getUser();
@@ -66,7 +246,11 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     try {
       // ------ 認証 ------
       if (message.action === "authenticate") {
-        const result = await authenticate();
+        const result = await withCommentLock(async () => {
+          const result = await authenticate();
+          await syncCommentAlarm();
+          return result;
+        });
         if (result.success) {
           // Fetch user info to populate state
           try {
@@ -85,13 +269,41 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
 
       // ------ ログアウト ------
       else if (message.action === "logout") {
-        await logout();
+        await withCommentLock(async () => {
+          await logout();
+          const settings = await getPinnedCommentSettings();
+          await writeLocal({ pinnedCommentSettings: { ...settings, autoPost: false } });
+          await syncCommentAlarm();
+        });
         sendResponse({ success: true });
+        return;
+      }
+
+      else if (message.action === "getPinnedCommentSettings") {
+        sendResponse({ success: true, ...await getCommentPanel() });
+        return;
+      }
+      else if (message.action === "savePinnedCommentSettings") {
+        const panel = await withCommentLock(() => saveCommentSettings(message.settings));
+        sendResponse({ success: true, ...panel });
+        return;
+      }
+      else if (message.action === "sendPinnedComment") {
+        const panel = await withCommentLock(async () => {
+          await runPinnedComment(true);
+          return getCommentPanel();
+        });
+        sendResponse({ success: true, ...panel });
         return;
       }
 
       // ------ 初期情報取得 ------
       else if (message.action === "getStreamInfo") {
+        const authorization = await getTokenAuthorization();
+        if (!hasRequiredScopes(authorization)) {
+          sendResponse({ success: false, requiresReauth: true, error: chrome.i18n.getMessage("errorCommentPermissions") });
+          return;
+        }
         const { user } = await refreshStreamState();
         const userId = user.id;
         const currentStreamState = getStreamState();

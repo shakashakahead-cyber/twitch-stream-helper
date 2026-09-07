@@ -24,7 +24,7 @@
     "description": "Twitch接続中に表示するステータス"
   },
   "loginPrompt": {
-    "message": "Twitchにログインして、タイトル・カテゴリ・タグ・X投稿をひとつの画面で管理できます。",
+    "message": "Twitchにログインして、配信情報・固定コメント・X投稿をひとつの画面で管理できます。",
     "description": "ログイン前に表示する案内"
   },
   "streamTitleLabel": {
@@ -271,6 +271,128 @@
   "errorTagLimit": {
     "message": "タグは最大10個までです",
     "description": "タグ数の上限エラー"
+  },
+  "commentHeading": {
+    "message": "固定コメント"
+  },
+  "commentDescription": {
+    "message": "コメントを保存して、自動投稿・固定できます。"
+  },
+  "commentDefaultLabel": {
+    "message": "共通コメント"
+  },
+  "commentPlaceholder": {
+    "message": "参加歓迎です！参加希望の方は「参加希望」とコメントしてください！"
+  },
+  "commentLengthLabel": {
+    "message": "文字数"
+  },
+  "commentCategoryHeading": {
+    "message": "カテゴリ別のコメント"
+  },
+  "commentCategoryLabel": {
+    "message": "保存済みカテゴリ"
+  },
+  "commentCategoryMessageLabel": {
+    "message": "このカテゴリ用のコメント"
+  },
+  "commentCategoryHint": {
+    "message": "空欄の場合は共通コメントを使います。投稿時の Twitch のカテゴリで選択します。編集後は「設定を保存」を押してください。"
+  },
+  "commentAutoPost": {
+    "message": "配信開始時に1回だけ自動投稿"
+  },
+  "commentPin": {
+    "message": "コメントを固定する"
+  },
+  "commentDuration": {
+    "message": "固定時間"
+  },
+  "commentUntilEnd": {
+    "message": "配信終了まで"
+  },
+  "commentThirtyMinutes": {
+    "message": "30分"
+  },
+  "commentTenMinutes": {
+    "message": "10分"
+  },
+  "commentDetailsLabel": {
+    "message": "投稿のしくみ"
+  },
+  "commentDetails": {
+    "message": "Chrome 起動中は約1分ごとに配信状態だけを確認します。有効化時にすでに配信中なら、その配信にも1回だけ投稿します。固定すると現在の固定コメントを置き換えます。共有チャットでは共有先にも投稿されます。"
+  },
+  "loginReauthorizePrompt": {
+    "message": "チャット投稿・固定も利用できるよう、もう一度ログインしてください。保存済みの設定は引き継がれます。"
+  },
+  "commentSave": {
+    "message": "設定を保存"
+  },
+  "commentSend": {
+    "message": "今すぐ投稿・再試行"
+  },
+  "commentSaved": {
+    "message": "設定を保存しました。"
+  },
+  "commentUnsaved": {
+    "message": "未保存の変更があります。「設定を保存」で反映します。"
+  },
+  "commentWaiting": {
+    "message": "投稿記録はまだありません。自動投稿するには上のチェックを有効にしてください。"
+  },
+  "commentOffline": {
+    "message": "現在オフラインです。自動投稿が有効なら配信開始の検知後に投稿します。"
+  },
+  "commentSending": {
+    "message": "投稿・固定中…"
+  },
+  "commentSent": {
+    "message": "この配信では投稿済みです。再投稿はしません。"
+  },
+  "commentPinned": {
+    "message": "この配信では投稿・固定済みです。固定の期限切れや解除後も再投稿はしません。"
+  },
+  "commentSendFailed": {
+    "message": "投稿できませんでした。エラーを確認して「今すぐ投稿・再試行」を押してください。この配信では自動再送しません。"
+  },
+  "commentPinFailed": {
+    "message": "投稿済みですが固定に失敗しました。「今すぐ投稿・再試行」で、元の固定時間のまま固定のみ再試行します。"
+  },
+  "commentDeliveryUnknown": {
+    "message": "投稿結果を確認できませんでした。重複を防ぐためこの配信では再送しません。Twitch のチャットを確認し、必要なら手動で投稿・固定してください。"
+  },
+  "commentPinInterrupted": {
+    "message": "固定処理が中断されました。Twitch を確認し、必要なら固定を再試行してください。"
+  },
+  "errorCommentPermissions": {
+    "message": "もう一度ログインして、必要なアクセスを許可してください。"
+  },
+  "errorCommentAuthCheck": {
+    "message": "Twitch の権限を確認できませんでした。しばらく待ってから再試行してください。"
+  },
+  "errorCommentStreamCheck": {
+    "message": "配信状態を確認できなかったため、コメントは投稿していません。"
+  },
+  "errorCommentAccount": {
+    "message": "別のアカウントで保存した設定です。コメントを確認し、このアカウントで設定を保存してから投稿してください。"
+  },
+  "errorCommentLength": {
+    "message": "各コメントは500文字以内で入力してください。"
+  },
+  "errorCommentEmpty": {
+    "message": "このカテゴリで使うコメントがありません。共通またはカテゴリ別のコメントを保存してください。"
+  },
+  "errorCommentRequest": {
+    "message": "コメントの処理に失敗しました。"
+  },
+  "errorCommentDropped": {
+    "message": "Twitch がコメントを送信しませんでした: $reason$",
+    "placeholders": {
+      "reason": {
+        "content": "$1"
+      }
+    }
   },
   "errorTitleTooLong": {
     "message": "展開後のタイトルは$count$文字です。最大$max$文字まで設定できます。",

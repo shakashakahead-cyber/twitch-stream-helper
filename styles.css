@@ -36,8 +36,52 @@ body {
 
 button,
 input,
+select,
 textarea {
   font: inherit;
+}
+
+.comment-section fieldset {
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+.comment-section .field-label {
+  display: block;
+  margin-top: 12px;
+}
+
+.comment-section select {
+  width: 100%;
+}
+
+.comment-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.comment-actions .button {
+  flex: 1 1 120px;
+}
+
+.comment-status {
+  margin: 10px 0 0;
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.6;
+  overflow-wrap: anywhere;
+}
+
+.comment-status.is-error {
+  color: var(--danger);
+}
+
+.comment-section [hidden] {
+  display: none;
 }
 
 button {

@@ -25,7 +25,7 @@
 
     <section id="loggedOutState" class="login-card">
       <div class="login-icon" aria-hidden="true">●</div>
-      <p>__MSG_loginPrompt__</p>
+      <p id="loginPrompt">__MSG_loginPrompt__</p>
       <button id="loginTwitch" class="button button-primary button-full">__MSG_loginButton__</button>
     </section>
 
@@ -95,9 +95,52 @@
         <ul id="tagSuggestions" class="tag-suggestions"></ul>
       </section>
 
-      <section class="settings-card post-section">
+      <section class="settings-card comment-section" aria-labelledby="commentHeading">
         <div class="section-heading">
           <span class="section-index">04</span>
+          <div>
+            <h2 id="commentHeading" class="section-title">__MSG_commentHeading__</h2>
+            <p class="section-description">__MSG_commentDescription__</p>
+          </div>
+        </div>
+        <fieldset id="commentFields" disabled>
+          <label class="field-label" for="commentMessage">__MSG_commentDefaultLabel__</label>
+          <textarea id="commentMessage" class="control" rows="3" placeholder="__MSG_commentPlaceholder__"></textarea>
+          <div class="field-meta"><span>__MSG_commentLengthLabel__</span><span id="commentCount">0/500</span></div>
+          <details class="template-tools">
+            <summary class="template-tools-label">__MSG_commentCategoryHeading__</summary>
+            <label class="field-label" for="commentCategory">__MSG_commentCategoryLabel__</label>
+            <select id="commentCategory" class="control"></select>
+            <label class="field-label" for="commentCategoryMessage">__MSG_commentCategoryMessageLabel__</label>
+            <textarea id="commentCategoryMessage" class="control" rows="3" aria-describedby="commentCategoryHint"></textarea>
+            <small id="commentCategoryHint">__MSG_commentCategoryHint__</small>
+          </details>
+          <div class="option-list">
+            <label class="option-row" for="commentAutoPost"><input type="checkbox" id="commentAutoPost"><span>__MSG_commentAutoPost__</span></label>
+            <label class="option-row" for="commentPin"><input type="checkbox" id="commentPin" checked><span>__MSG_commentPin__</span></label>
+          </div>
+          <label class="field-label" for="commentDuration">__MSG_commentDuration__</label>
+          <select id="commentDuration" class="control">
+            <option value="0">__MSG_commentUntilEnd__</option>
+            <option value="1800">__MSG_commentThirtyMinutes__</option>
+            <option value="600">__MSG_commentTenMinutes__</option>
+          </select>
+          <details class="template-tools">
+            <summary class="template-tools-label">__MSG_commentDetailsLabel__</summary>
+            <small>__MSG_commentDetails__</small>
+          </details>
+          <div class="comment-actions">
+            <button id="commentSave" class="button button-secondary" type="button">__MSG_commentSave__</button>
+            <button id="commentSend" class="button button-primary" type="button">__MSG_commentSend__</button>
+          </div>
+        </fieldset>
+        <p id="commentSaveStatus" class="comment-status" role="status"></p>
+        <p id="commentStatus" class="comment-status" role="status" aria-live="polite"></p>
+      </section>
+
+      <section class="settings-card post-section">
+        <div class="section-heading">
+          <span class="section-index">05</span>
           <div>
             <h2 class="section-title">__MSG_postToXSectionLabel__</h2>
             <p class="section-description">__MSG_postSectionDescription__</p>

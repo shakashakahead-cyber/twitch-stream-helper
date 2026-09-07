@@ -31,7 +31,9 @@ async function twitchApi(endpoint, method = "GET", body = null) {
 
     if (res.status === 401) {
         await clearTokens();
-        throw new Error(chrome.i18n.getMessage("errorLoginRequired"));
+        const error = new Error(chrome.i18n.getMessage("errorLoginRequired"));
+        error.status = 401;
+        throw error;
     }
 
     if (res.status === 204) return {};
@@ -77,6 +79,40 @@ export async function getChannelInfo(broadcasterId) {
 
 export async function updateChannelInfo(broadcasterId, data) {
     await twitchApi(`channels?broadcaster_id=${broadcasterId}`, "PATCH", data);
+}
+
+export async function getLiveStream(broadcasterId) {
+    const result = await twitchApi(`streams?user_id=${encodeURIComponent(broadcasterId)}`);
+    if (!Array.isArray(result.data)) throw new Error(chrome.i18n.getMessage("errorCommentStreamCheck"));
+    return result.data[0] || null;
+}
+
+export async function sendChatMessage(broadcasterId, message) {
+    const result = await twitchApi("chat/messages", "POST", {
+        broadcaster_id: broadcasterId,
+        sender_id: broadcasterId,
+        message,
+    });
+    const sent = result.data?.[0];
+    if (sent?.is_sent === false) {
+        const error = new Error(chrome.i18n.getMessage("errorCommentDropped", [
+            sent.drop_reason?.message || sent.drop_reason?.code || "—",
+        ]));
+        error.definitelyNotSent = true;
+        throw error;
+    }
+    if (!sent?.is_sent || !sent.message_id) throw new Error(chrome.i18n.getMessage("commentDeliveryUnknown"));
+    return sent.message_id;
+}
+
+export async function pinChatMessage(broadcasterId, messageId, durationSeconds) {
+    const query = new URLSearchParams({
+        broadcaster_id: broadcasterId,
+        moderator_id: broadcasterId,
+        message_id: messageId,
+    });
+    if (durationSeconds) query.set("duration_seconds", String(durationSeconds));
+    await twitchApi(`chat/pins?${query}`, "PUT");
 }
 
 export async function searchCategoriesApi(query) {

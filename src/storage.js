@@ -7,15 +7,48 @@ import { normalizeTagEntries, mapTags } from "./utils.js";
 // ---- Base Storage Wrappers ----
 
 export function readLocal(keys) {
-    return new Promise(resolve => chrome.storage.local.get(keys, resolve));
+    return new Promise((resolve, reject) => chrome.storage.local.get(keys, result => {
+        if (chrome.runtime.lastError) reject(new Error(chrome.runtime.lastError.message));
+        else resolve(result);
+    }));
 }
 
 export function writeLocal(obj) {
-    return new Promise(resolve => chrome.storage.local.set(obj, resolve));
+    return new Promise((resolve, reject) => chrome.storage.local.set(obj, () => {
+        if (chrome.runtime.lastError) reject(new Error(chrome.runtime.lastError.message));
+        else resolve();
+    }));
 }
 
 export async function removeLocal(keys) {
-    return new Promise(resolve => chrome.storage.local.remove(keys, resolve));
+    return new Promise((resolve, reject) => chrome.storage.local.remove(keys, () => {
+        if (chrome.runtime.lastError) reject(new Error(chrome.runtime.lastError.message));
+        else resolve();
+    }));
+}
+
+// Delivery records must be persisted successfully before a chat message is sent.
+export async function getPinnedCommentSettings() {
+    const { pinnedCommentSettings } = await readLocal(["pinnedCommentSettings"]);
+    return normalizePinnedCommentSettings(pinnedCommentSettings);
+}
+
+export function normalizePinnedCommentSettings(value = {}) {
+    const settings = value && typeof value === "object" ? value : {};
+    const categoryMessages = {};
+    for (const [id, text] of Object.entries(settings.categoryMessages || {})) {
+        if (/^\d+$/.test(id) && typeof text === "string" && text.trim()) {
+            categoryMessages[id] = text.trim();
+        }
+    }
+    return {
+        message: typeof settings.message === "string" ? settings.message.trim() : "",
+        autoPost: settings.autoPost === true,
+        pin: settings.pin !== false,
+        durationSeconds: [0, 600, 1800].includes(settings.durationSeconds) ? settings.durationSeconds : 0,
+        categoryMessages,
+        ownerId: typeof settings.ownerId === "string" ? settings.ownerId : "",
+    };
 }
 
 // ---- Stream State Management ----
