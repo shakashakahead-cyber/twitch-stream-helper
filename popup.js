@@ -64,6 +64,19 @@ const xPostPreview = document.getElementById("xPostPreview");
 const postTemplateVariables = document.getElementById("postTemplateVariables");
 
 const toast = document.getElementById("toast");
+const commentFields = document.getElementById("commentFields");
+const commentMessage = document.getElementById("commentMessage");
+const commentCategory = document.getElementById("commentCategory");
+const commentCategoryMessage = document.getElementById("commentCategoryMessage");
+const commentAutoPost = document.getElementById("commentAutoPost");
+const commentPin = document.getElementById("commentPin");
+const commentDuration = document.getElementById("commentDuration");
+const commentSave = document.getElementById("commentSave");
+const commentSend = document.getElementById("commentSend");
+const commentStatus = document.getElementById("commentStatus");
+const commentSaveStatus = document.getElementById("commentSaveStatus");
+let commentCategoryMessages = {};
+let commentPanel = null;
 
 let currentGameId = "";
 let currentGameName = "";
@@ -94,11 +107,15 @@ function showToast(message, type = "success") {
   }, 2500);
 }
 
-function setAuthenticatedUI(isAuthenticated) {
+function setAuthenticatedUI(isAuthenticated, requiresReauth = false) {
   loggedOutState.style.display = isAuthenticated ? "none" : "flex";
   connectedBadge.style.display = isAuthenticated ? "inline-flex" : "none";
   logoutBtn.style.display = isAuthenticated ? "inline-flex" : "none";
   mainUI.style.display = isAuthenticated ? "flex" : "none";
+  document.getElementById("loginPrompt").textContent = chrome.i18n.getMessage(
+    requiresReauth ? "loginReauthorizePrompt" : "loginPrompt"
+  );
+  if (isAuthenticated) loadCommentPanel();
 }
 
 // ---- template variables ----
@@ -250,6 +267,7 @@ titleInput.addEventListener("keydown", (event) => {
 function setCategory(name, boxArtUrlTemplate, id = "") {
   currentGameName = name;
   currentGameId = id || "";
+  addCommentCategory(currentGameId, name);
   currentGameBoxArtUrl = boxArtUrlTemplate || "";
 
   gameInput.style.display = "none";
@@ -587,6 +605,140 @@ chrome.storage.local.get(["excludeStreamUrl"], (r) => {
   updateTemplatePreviews();
 });
 
+// ---- saved chat comment ----
+function commentRequest(action, values = {}) {
+  return new Promise((resolve, reject) => {
+    chrome.runtime.sendMessage({ action, ...values }, response => {
+      if (chrome.runtime.lastError) reject(new Error(chrome.runtime.lastError.message));
+      else if (!response?.success) reject(new Error(response?.error || chrome.i18n.getMessage("errorCommentRequest")));
+      else resolve(response);
+    });
+  });
+}
+
+function addCommentCategory(id, name) {
+  if (!id || [...commentCategory.options].some(option => option.value === id)) return;
+  const option = document.createElement("option");
+  option.value = id;
+  option.textContent = name || id;
+  commentCategory.appendChild(option);
+  commentCategoryMessage.disabled = false;
+}
+
+function updateCommentControls() {
+  document.getElementById("commentCount").textContent = `${[...commentMessage.value.trim()].length}/500`;
+  commentDuration.disabled = !commentPin.checked;
+  const authorized = commentPanel?.canSend && (!commentPin.checked || commentPanel?.canPin);
+  commentSend.disabled = !authorized;
+}
+
+function renderCommentStatus(status) {
+  const keys = {
+    offline: "commentOffline", empty: "errorCommentEmpty", sending: "commentSending",
+    pinning: "commentSending", sent: "commentSent", pinned: "commentPinned",
+    sendFailed: "commentSendFailed", pinFailed: "commentPinFailed", unknown: "commentDeliveryUnknown",
+    error: "errorCommentRequest",
+  };
+  commentStatus.textContent = status
+    ? chrome.i18n.getMessage(keys[status.state] || "errorCommentRequest")
+    : chrome.i18n.getMessage("commentWaiting");
+  if (status?.error && status.error !== commentStatus.textContent) commentStatus.textContent += ` ${status.error}`;
+  if (status?.updatedAt) commentStatus.textContent += ` (${new Date(status.updatedAt).toLocaleString()})`;
+  commentStatus.classList.toggle("is-error", ["sendFailed", "pinFailed", "unknown", "error"].includes(status?.state));
+}
+
+async function loadCommentPanel() {
+  try {
+    const panel = await commentRequest("getPinnedCommentSettings");
+    if (panel.requiresReauth) {
+      setAuthenticatedUI(false, true);
+      return;
+    }
+    commentPanel = panel;
+    commentMessage.value = panel.settings.message;
+    commentAutoPost.checked = panel.settings.autoPost;
+    commentPin.checked = panel.settings.pin;
+    commentDuration.value = String(panel.settings.durationSeconds);
+    commentCategoryMessages = { ...panel.settings.categoryMessages };
+    const result = await commentRequest("getSavedCategories");
+    for (const category of result.categories) addCommentCategory(category.id, category.name);
+    for (const id of Object.keys(commentCategoryMessages)) addCommentCategory(id, id);
+    addCommentCategory(currentGameId, currentGameName);
+    if (currentGameId) commentCategory.value = currentGameId;
+    commentCategoryMessage.value = commentCategoryMessages[commentCategory.value] || "";
+    commentCategoryMessage.disabled = !commentCategory.value;
+    commentFields.disabled = false;
+    updateCommentControls();
+    renderCommentStatus(panel.status);
+    commentSaveStatus.textContent = panel.authError || (panel.accountMismatch
+      ? chrome.i18n.getMessage("errorCommentAccount") : "");
+  } catch (error) {
+    commentStatus.textContent = error.message;
+  }
+}
+
+function getCommentDraft() {
+  const settings = {
+    message: commentMessage.value,
+    autoPost: commentAutoPost.checked,
+    pin: commentPin.checked,
+    durationSeconds: Number(commentDuration.value),
+    categoryMessages: { ...commentCategoryMessages },
+  };
+  if ([settings.message, ...Object.values(settings.categoryMessages)].some(text => [...text.trim()].length > 500)) {
+    throw new Error(chrome.i18n.getMessage("errorCommentLength"));
+  }
+  return settings;
+}
+
+async function saveCommentDraft() {
+  const panel = await commentRequest("savePinnedCommentSettings", { settings: getCommentDraft() });
+  commentPanel = panel;
+  commentSaveStatus.textContent = chrome.i18n.getMessage("commentSaved");
+  updateCommentControls();
+  return panel;
+}
+
+async function withCommentUI(task) {
+  commentFields.disabled = true;
+  try {
+    await task();
+  } catch (error) {
+    commentSaveStatus.textContent = error.message;
+    showToast(error.message, "error");
+  } finally {
+    commentFields.disabled = false;
+    updateCommentControls();
+  }
+}
+
+for (const input of [commentMessage, commentAutoPost, commentPin, commentDuration, commentCategoryMessage]) {
+  input.addEventListener("input", () => {
+    if (input === commentCategoryMessage && commentCategory.value) {
+      commentCategoryMessages[commentCategory.value] = commentCategoryMessage.value;
+    }
+    commentSaveStatus.textContent = chrome.i18n.getMessage("commentUnsaved");
+    updateCommentControls();
+  });
+}
+commentCategory.addEventListener("change", () => {
+  commentCategoryMessage.value = commentCategoryMessages[commentCategory.value] || "";
+});
+commentSave.addEventListener("click", () => withCommentUI(saveCommentDraft));
+commentSend.addEventListener("click", () => withCommentUI(async () => {
+  await saveCommentDraft();
+  renderCommentStatus({ state: "sending" });
+  const panel = await commentRequest("sendPinnedComment");
+  commentPanel = panel;
+  renderCommentStatus(panel.status);
+}));
+chrome.storage.onChanged.addListener((changes, area) => {
+  if (area === "local" && changes.pinnedCommentStatus && commentPanel) {
+    const status = changes.pinnedCommentStatus.newValue;
+    if (status?.userId === commentPanel.settings.ownerId) renderCommentStatus(status);
+  }
+});
+
 // ---- login/logout ----
 loginBtn.addEventListener("click", () => {
   loginBtn.disabled = true;
@@ -639,6 +791,7 @@ loginBtn.addEventListener("click", () => {
         }
       });
     } else {
+      if (res?.requiresReauth) setAuthenticatedUI(false, true);
       showToast((res && res.error) || chrome.i18n.getMessage("toastLoginFailed"), "error");
     }
   });
@@ -712,7 +865,7 @@ chrome.runtime.sendMessage({ action: "getStreamInfo" }, (r) => {
       showToast(chrome.i18n.getMessage("toastCurrentCategorySaved", r.game_name));
     }
   } else {
-    setAuthenticatedUI(false);
+    setAuthenticatedUI(false, Boolean(r?.requiresReauth));
   }
 });
 

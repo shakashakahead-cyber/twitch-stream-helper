@@ -24,7 +24,7 @@
     "description": "Status shown while connected to Twitch."
   },
   "loginPrompt": {
-    "message": "Log in to Twitch to manage your title, category, tags, and X post from one place.",
+    "message": "Log in to Twitch to manage your stream settings, pinned comments, and X posts from one place.",
     "description": "Prompt shown before the user logs in."
   },
   "streamTitleLabel": {
@@ -281,6 +281,128 @@
   "errorTagLimit": {
     "message": "Maximum of 10 tags allowed.",
     "description": "Error for when the number of tags exceeds the limit."
+  },
+  "commentHeading": {
+    "message": "Saved chat comment"
+  },
+  "commentDescription": {
+    "message": "Save a comment to post and pin automatically."
+  },
+  "commentDefaultLabel": {
+    "message": "Default comment"
+  },
+  "commentPlaceholder": {
+    "message": "Everyone is welcome! Say hello in chat."
+  },
+  "commentLengthLabel": {
+    "message": "Characters"
+  },
+  "commentCategoryHeading": {
+    "message": "Comments by category"
+  },
+  "commentCategoryLabel": {
+    "message": "Saved category"
+  },
+  "commentCategoryMessageLabel": {
+    "message": "Comment for this category"
+  },
+  "commentCategoryHint": {
+    "message": "Leave blank to use the default. The category on Twitch at posting time is used. Apply edits with Save settings."
+  },
+  "commentAutoPost": {
+    "message": "Post once when a stream starts"
+  },
+  "commentPin": {
+    "message": "Pin the comment"
+  },
+  "commentDuration": {
+    "message": "Pin duration"
+  },
+  "commentUntilEnd": {
+    "message": "Until the stream ends"
+  },
+  "commentThirtyMinutes": {
+    "message": "30 minutes"
+  },
+  "commentTenMinutes": {
+    "message": "10 minutes"
+  },
+  "commentDetailsLabel": {
+    "message": "How posting works"
+  },
+  "commentDetails": {
+    "message": "While Chrome is running, only the stream status is checked about once a minute. If you enable this during a live stream, it posts once for that stream too. Pinning replaces the current pin. In Shared Chat, the comment is also sent to the shared channels."
+  },
+  "loginReauthorizePrompt": {
+    "message": "Log in again to enable chat posting and pinning. Your saved settings will be kept."
+  },
+  "commentSave": {
+    "message": "Save settings"
+  },
+  "commentSend": {
+    "message": "Post now / retry"
+  },
+  "commentSaved": {
+    "message": "Settings saved."
+  },
+  "commentUnsaved": {
+    "message": "Unsaved changes — use Save settings to apply."
+  },
+  "commentWaiting": {
+    "message": "No delivery recorded yet. Automatic posting is off unless enabled above."
+  },
+  "commentOffline": {
+    "message": "Offline. The comment will be posted when a live stream is detected if automatic posting is enabled."
+  },
+  "commentSending": {
+    "message": "Posting / pinning…"
+  },
+  "commentSent": {
+    "message": "Posted for this stream. It will not be posted again."
+  },
+  "commentPinned": {
+    "message": "Posted and pinned for this stream. It will not be posted again after the pin expires or is removed."
+  },
+  "commentSendFailed": {
+    "message": "Not posted. Check the error, then use Post now / retry. No automatic resend will be attempted for this stream."
+  },
+  "commentPinFailed": {
+    "message": "The comment was posted, but pinning failed. Post now / retry retries only the pin with the original duration."
+  },
+  "commentDeliveryUnknown": {
+    "message": "Delivery could not be confirmed. To avoid duplicates, this stream will not be retried. Check Twitch chat and post or pin manually if needed."
+  },
+  "commentPinInterrupted": {
+    "message": "Pinning was interrupted. Check Twitch, then retry the pin if needed."
+  },
+  "errorCommentPermissions": {
+    "message": "Log in again and allow the requested access."
+  },
+  "errorCommentAuthCheck": {
+    "message": "Could not check Twitch permissions. Try again later."
+  },
+  "errorCommentStreamCheck": {
+    "message": "Could not check the live stream. No comment was posted."
+  },
+  "errorCommentAccount": {
+    "message": "The saved comment belongs to a different login. Review the comment and save settings for this account before posting."
+  },
+  "errorCommentLength": {
+    "message": "Each comment must be 500 characters or fewer."
+  },
+  "errorCommentEmpty": {
+    "message": "No comment is set for this category. Save a default or category comment first."
+  },
+  "errorCommentRequest": {
+    "message": "The comment operation failed."
+  },
+  "errorCommentDropped": {
+    "message": "Twitch did not send the comment: $reason$",
+    "placeholders": {
+      "reason": {
+        "content": "$1"
+      }
+    }
   },
   "errorTitleTooLong": {
     "message": "The expanded title is $count$ characters; the maximum is $max$.",
