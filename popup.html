@@ -6,45 +6,130 @@
   <link rel="stylesheet" href="styles.css">
 </head>
 <body>
-  <button id="loginTwitch">__MSG_loginButton__</button>
-  <button id="logoutTwitch" style="display:none;">__MSG_logoutButton__</button>
-
-  <div id="mainUI" style="display:none;">
-    <div>
-      <label>__MSG_streamTitleLabel__</label>
-      <input type="text" id="streamTitle" maxlength="140">
-      <span id="titleCount">0/140</span>
-    </div>
-
-    <div>
-      <label>__MSG_categoryLabel__</label>
-      <div class="category-row">
-        <input type="text" id="game" placeholder="__MSG_categorySearchPlaceholder__">
-        <img id="gameThumbnail" style="display:none;" />
+  <div class="app-shell">
+    <header class="app-header">
+      <div class="brand">
+        <div class="brand-mark">
+          <img src="icons/icon32.png" alt="">
+        </div>
+        <div class="brand-copy">
+          <h1>__MSG_extensionName__</h1>
+          <p>__MSG_appSubtitle__</p>
+        </div>
       </div>
-      <ul id="gameSuggestions" class="suggestions"></ul>
-      <div id="selectedCategory"></div>
-    </div>
+      <div class="header-actions">
+        <span id="connectedBadge" class="status-badge" style="display:none;">__MSG_connectedStatus__</span>
+        <button id="logoutTwitch" class="button button-ghost button-compact" style="display:none;">__MSG_logoutButton__</button>
+      </div>
+    </header>
 
-    <div id="tagSection" style="display:none;">
-      <label>__MSG_tagsLabel__</label>
-      <div id="tagList"></div>
-      <input type="text" id="newTag" placeholder="__MSG_newTagPlaceholder__">
-      <button id="addTag">__MSG_addTagButton__</button>
-      <ul id="tagSuggestions" class="tag-suggestions"></ul>
-    </div>
+    <section id="loggedOutState" class="login-card">
+      <div class="login-icon" aria-hidden="true">●</div>
+      <p>__MSG_loginPrompt__</p>
+      <button id="loginTwitch" class="button button-primary button-full">__MSG_loginButton__</button>
+    </section>
 
-    <div class="post-section">
-      <label>__MSG_postToXSectionLabel__</label>
-      <textarea id="customHashtags" placeholder="__MSG_customHashtagsPlaceholder__"></textarea>
-      <label>
-        <input type="checkbox" id="includeCategoryTag"> __MSG_includeCategoryCheckbox__
-      </label>
-      <button id="postToX">__MSG_postToXButton__</button>
-    </div>
+    <main id="mainUI" style="display:none;">
+      <section class="settings-card">
+        <div class="section-heading">
+          <span class="section-index">01</span>
+          <div>
+            <label class="section-title" for="streamTitle">__MSG_streamTitleLabel__</label>
+            <p class="section-description">__MSG_titleSectionDescription__</p>
+          </div>
+        </div>
+        <input class="control" type="text" id="streamTitle" aria-describedby="titleTemplateHint">
+        <div class="field-meta">
+          <span>__MSG_expandedLengthLabel__</span>
+          <span id="titleCount">0/140</span>
+        </div>
+        <div class="template-preview">
+          <span>__MSG_templatePreviewLabel__</span>
+          <span id="titlePreview"></span>
+        </div>
+        <div class="title-sync-panel">
+          <div class="title-sync-heading">
+            <span>__MSG_currentTwitchTitleLabel__</span>
+            <span id="titleSyncStatus" class="sync-status" aria-live="polite"></span>
+          </div>
+          <p id="currentTwitchTitle">—</p>
+        </div>
+        <details class="template-tools">
+          <summary class="template-tools-label">__MSG_templateVariablesLabel__</summary>
+          <div id="titleTemplateVariables" class="template-variable-list"></div>
+          <small id="titleTemplateHint">__MSG_titleTemplateHint__</small>
+        </details>
+      </section>
+
+      <section class="settings-card">
+        <div class="section-heading">
+          <span class="section-index">02</span>
+          <div>
+            <label class="section-title" for="game">__MSG_categoryLabel__</label>
+            <p class="section-description">__MSG_categorySectionDescription__</p>
+          </div>
+        </div>
+        <div class="category-picker">
+          <div class="category-row">
+            <input class="control" type="text" id="game" placeholder="__MSG_categorySearchPlaceholder__" autocomplete="off">
+            <img id="gameThumbnail" style="display:none;" alt="">
+          </div>
+          <ul id="gameSuggestions" class="suggestions"></ul>
+        </div>
+        <div id="selectedCategory"></div>
+      </section>
+
+      <section id="tagSection" class="settings-card" style="display:none;">
+        <div class="section-heading">
+          <span class="section-index">03</span>
+          <div>
+            <label class="section-title" for="newTag">__MSG_tagsLabel__</label>
+            <p class="section-description">__MSG_tagsSectionDescription__</p>
+          </div>
+        </div>
+        <div id="tagList"></div>
+        <div class="inline-control">
+          <input class="control" type="text" id="newTag" placeholder="__MSG_newTagPlaceholder__" autocomplete="off">
+          <button id="addTag" class="button button-secondary">__MSG_addTagButton__</button>
+        </div>
+        <ul id="tagSuggestions" class="tag-suggestions"></ul>
+      </section>
+
+      <section class="settings-card post-section">
+        <div class="section-heading">
+          <span class="section-index">04</span>
+          <div>
+            <h2 class="section-title">__MSG_postToXSectionLabel__</h2>
+            <p class="section-description">__MSG_postSectionDescription__</p>
+          </div>
+        </div>
+        <label class="field-label" for="customHashtags">__MSG_postTextLabel__</label>
+        <textarea class="control" id="customHashtags" placeholder="__MSG_customHashtagsPlaceholder__" aria-describedby="postTemplateHint"></textarea>
+        <div class="template-preview x-preview">
+          <span>__MSG_templatePreviewLabel__</span>
+          <span id="xPostPreview"></span>
+        </div>
+        <details class="template-tools">
+          <summary class="template-tools-label">__MSG_templateVariablesLabel__</summary>
+          <div id="postTemplateVariables" class="template-variable-list"></div>
+          <small id="postTemplateHint">__MSG_postTemplateHint__</small>
+        </details>
+        <div class="option-list">
+          <label class="option-row" for="includeCategoryTag">
+            <input type="checkbox" id="includeCategoryTag">
+            <span>__MSG_includeCategoryCheckbox__</span>
+          </label>
+          <label class="option-row" for="excludeStreamUrl">
+            <input type="checkbox" id="excludeStreamUrl">
+            <span>__MSG_excludeStreamUrlCheckbox__</span>
+          </label>
+        </div>
+        <button id="postToX" class="button button-x button-full">__MSG_postToXButton__</button>
+      </section>
+    </main>
   </div>
 
-  <div id="toast" class="toast"></div>
+  <div id="toast" class="toast" role="status" aria-live="polite"></div>
 
   <script type="module" src="popup.js"></script>
 </body>

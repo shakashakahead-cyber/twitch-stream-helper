@@ -1,263 +1,812 @@
-﻿/* ==============================
-   Twitch Stream Helper - styles.css (Twitchカラー寄せ)
-   ============================== */
-
-/* 全体 */
-body {
-  font-family: sans-serif;
+:root {
+  color-scheme: light;
+  font-family: Inter, "Segoe UI", "Noto Sans JP", sans-serif;
   font-size: 14px;
-  margin: 10px;
-  color: #222;
-  min-width: 300px;
-  min-height: 400px;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
+  color: #241f2e;
+  background: #f4f1f8;
+  --accent: #7c3aed;
+  --accent-strong: #5b21b6;
+  --accent-soft: #f1eafe;
+  --border: #e5deed;
+  --muted: #756d80;
+  --surface: #ffffff;
+  --success: #15803d;
+  --danger: #c2413b;
+  --shadow: 0 12px 30px rgba(46, 25, 71, 0.08);
 }
 
-/* ボタン共通 */
-button {
-  padding: 6px 12px;
-  margin: 4px 0;
-  border: none;
-  border-radius: 6px;
-  background-color: #9146FF; /* Twitchカラー */
-  color: white;
-  cursor: pointer;
-  font-size: 13px;
-  transition: opacity 0.2s;
-}
-button:hover {
-  opacity: 0.9;
-}
-button:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-}
-
-/* ログイン・ログアウトボタン */
-#loginTwitch,
-#logoutTwitch {
-  width: 90%;
-  max-width: 280px;
-}
-
-/* ✅ ログアウト時: ログインボタンを中央寄せ */
-body:has(#mainUI[style*="display: none"]) {
-  justify-content: center;
-}
-
-/* ✅ ログイン後のメインUI */
-#mainUI {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-  margin-top: 10px;
-  width: 100%;
-}
-
-/* 入力欄 */
-input[type="text"],
-textarea {
-  width: 100%;
-  padding: 6px;
-  border: 1px solid #ccc;
-  border-radius: 6px;
-  font-size: 13px;
+* {
   box-sizing: border-box;
 }
 
-/* タイトルカウント */
-#titleCount {
-  font-size: 12px;
-  color: #666;
-  margin-left: 4px;
+html,
+body {
+  width: 390px;
+  min-width: 390px;
+  margin: 0;
+  padding: 0;
+  background:
+    radial-gradient(circle at top right, rgba(145, 70, 255, 0.14), transparent 34%),
+    #f4f1f8;
 }
 
-/* ✅ カテゴリ入力と画像を横並び */
+body {
+  min-height: 320px;
+}
+
+button,
+input,
+textarea {
+  font: inherit;
+}
+
+button {
+  border: 0;
+}
+
+.app-shell {
+  width: 100%;
+  padding-bottom: 14px;
+}
+
+.app-header {
+  position: sticky;
+  top: 0;
+  z-index: 20;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  min-height: 76px;
+  padding: 14px 16px;
+  color: #fff;
+  background: linear-gradient(135deg, #21142f 0%, #4c1d73 58%, #7c3aed 100%);
+  box-shadow: 0 8px 24px rgba(47, 22, 71, 0.2);
+}
+
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+}
+
+.brand-mark {
+  display: grid;
+  flex: 0 0 42px;
+  width: 42px;
+  height: 42px;
+  place-items: center;
+  border: 1px solid rgba(255, 255, 255, 0.22);
+  border-radius: 13px;
+  background: rgba(255, 255, 255, 0.12);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.16);
+}
+
+.brand-mark img {
+  width: 28px;
+  height: 28px;
+}
+
+.brand-copy {
+  min-width: 0;
+}
+
+.brand-copy h1 {
+  overflow: hidden;
+  margin: 0;
+  font-size: 15px;
+  font-weight: 750;
+  letter-spacing: 0.01em;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.brand-copy p {
+  overflow: hidden;
+  margin: 3px 0 0;
+  color: rgba(255, 255, 255, 0.72);
+  font-size: 11px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.header-actions {
+  display: flex;
+  flex-shrink: 0;
+  align-items: center;
+  gap: 7px;
+}
+
+.status-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 4px 7px;
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  border-radius: 999px;
+  color: rgba(255, 255, 255, 0.9);
+  background: rgba(255, 255, 255, 0.1);
+  font-size: 10px;
+}
+
+.status-badge::before {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #86efac;
+  box-shadow: 0 0 0 3px rgba(134, 239, 172, 0.14);
+  content: "";
+}
+
+.login-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 14px;
+  margin: 18px 14px 4px;
+  padding: 32px 26px 28px;
+  border: 1px solid rgba(124, 58, 237, 0.12);
+  border-radius: 20px;
+  background: rgba(255, 255, 255, 0.92);
+  box-shadow: var(--shadow);
+  text-align: center;
+}
+
+.login-card p {
+  max-width: 280px;
+  margin: 0 0 4px;
+  color: var(--muted);
+  line-height: 1.65;
+}
+
+.login-icon {
+  position: relative;
+  display: grid;
+  width: 58px;
+  height: 58px;
+  place-items: center;
+  border-radius: 18px;
+  color: #fff;
+  background: linear-gradient(145deg, #a855f7, #6d28d9);
+  box-shadow: 0 12px 22px rgba(124, 58, 237, 0.24);
+  font-size: 15px;
+}
+
+.login-icon::before {
+  position: absolute;
+  top: 14px;
+  width: 14px;
+  height: 13px;
+  border: 3px solid #fff;
+  border-bottom: 0;
+  border-radius: 9px 9px 0 0;
+  content: "";
+}
+
+.login-icon::after {
+  position: absolute;
+  bottom: 14px;
+  width: 17px;
+  height: 12px;
+  border: 3px solid #fff;
+  border-top: 0;
+  border-radius: 0 0 5px 5px;
+  content: "";
+}
+
+.login-icon {
+  font-size: 0;
+}
+
+#mainUI {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  width: 100%;
+  padding: 14px;
+}
+
+.settings-card {
+  position: relative;
+  width: 100%;
+  padding: 16px;
+  border: 1px solid var(--border);
+  border-radius: 17px;
+  background: rgba(255, 255, 255, 0.96);
+  box-shadow: 0 7px 22px rgba(50, 31, 69, 0.055);
+}
+
+.section-heading {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  margin-bottom: 13px;
+}
+
+.section-index {
+  display: inline-grid;
+  flex: 0 0 30px;
+  width: 30px;
+  height: 30px;
+  place-items: center;
+  border-radius: 10px;
+  color: var(--accent-strong);
+  background: var(--accent-soft);
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+}
+
+.section-title {
+  display: block;
+  margin: 0;
+  color: #2b2433;
+  font-size: 14px;
+  font-weight: 750;
+  line-height: 1.35;
+}
+
+.section-description {
+  margin: 3px 0 0;
+  color: var(--muted);
+  font-size: 11px;
+  line-height: 1.45;
+}
+
+.field-label {
+  display: block;
+  margin-bottom: 6px;
+  color: #514858;
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.control {
+  width: 100%;
+  min-height: 39px;
+  padding: 9px 11px;
+  border: 1px solid #dcd4e5;
+  border-radius: 10px;
+  outline: none;
+  color: #2a2331;
+  background: #fcfbfd;
+  transition: border-color 0.18s ease, box-shadow 0.18s ease, background 0.18s ease;
+}
+
+.control::placeholder {
+  color: #aaa1b2;
+}
+
+.control:hover {
+  border-color: #c9bdd6;
+  background: #fff;
+}
+
+.control:focus {
+  border-color: #9b6ee8;
+  background: #fff;
+  box-shadow: 0 0 0 3px rgba(124, 58, 237, 0.12);
+}
+
+textarea.control {
+  min-height: 78px;
+  resize: vertical;
+  line-height: 1.55;
+}
+
+.field-meta {
+  display: flex;
+  justify-content: flex-end;
+  gap: 5px;
+  margin-top: 5px;
+  color: var(--muted);
+  font-size: 10px;
+}
+
+#titleCount {
+  font-variant-numeric: tabular-nums;
+  font-weight: 700;
+}
+
+#titleCount.over-limit {
+  color: var(--danger);
+}
+
+.template-preview {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 7px;
+  width: 100%;
+  min-height: 34px;
+  margin-top: 8px;
+  padding: 8px 10px;
+  border: 1px solid #eee8f3;
+  border-radius: 10px;
+  color: #62596b;
+  background: #f8f6fa;
+  font-size: 11px;
+  line-height: 1.45;
+  overflow-wrap: anywhere;
+  white-space: pre-wrap;
+}
+
+.template-preview > span:first-child {
+  color: #8a7e94;
+  font-weight: 700;
+}
+
+.x-preview {
+  max-height: 112px;
+  overflow-y: auto;
+}
+
+.title-sync-panel {
+  margin-top: 8px;
+  padding: 9px 10px;
+  border: 1px solid #e5deeb;
+  border-radius: 10px;
+  background: #fff;
+}
+
+.title-sync-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  color: #817688;
+  font-size: 10px;
+  font-weight: 700;
+}
+
+#currentTwitchTitle {
+  margin: 6px 0 0;
+  color: #403747;
+  font-size: 11px;
+  font-weight: 650;
+  line-height: 1.45;
+  overflow-wrap: anywhere;
+}
+
+.sync-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 3px 7px;
+  border-radius: 999px;
+  font-size: 9px;
+  font-weight: 800;
+  white-space: nowrap;
+}
+
+.sync-status::before {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  content: "";
+}
+
+.sync-status.pending {
+  color: #92400e;
+  background: #fff7ed;
+}
+
+.sync-status.pending::before {
+  background: #f59e0b;
+}
+
+.sync-status.syncing {
+  color: #5b21b6;
+  background: #f3e8ff;
+}
+
+.sync-status.syncing::before {
+  background: #8b5cf6;
+  box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.13);
+}
+
+.sync-status.synced {
+  color: #166534;
+  background: #ecfdf3;
+}
+
+.sync-status.synced::before {
+  background: #22c55e;
+}
+
+.sync-status.failed {
+  color: #991b1b;
+  background: #fef2f2;
+}
+
+.sync-status.failed::before {
+  background: #ef4444;
+}
+
+.template-tools {
+  width: 100%;
+  margin-top: 8px;
+  padding: 7px 9px;
+  border: 1px solid transparent;
+  border-radius: 10px;
+  color: var(--muted);
+  background: #faf8fc;
+}
+
+.template-tools[open] {
+  border-color: #e8dff1;
+}
+
+.template-tools-label {
+  cursor: pointer;
+  color: #6f5f7d;
+  font-size: 11px;
+  font-weight: 700;
+  list-style-position: inside;
+}
+
+.template-tools[open] .template-tools-label {
+  margin-bottom: 8px;
+}
+
+.template-variable-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+  margin-bottom: 7px;
+}
+
+.template-tools small {
+  display: block;
+  color: #857a8d;
+  font-size: 10px;
+  line-height: 1.45;
+}
+
+.button {
+  display: inline-flex;
+  min-height: 36px;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  padding: 8px 13px;
+  border-radius: 10px;
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 750;
+  transition: transform 0.16s ease, box-shadow 0.16s ease, opacity 0.16s ease, background 0.16s ease;
+}
+
+.button:hover {
+  transform: translateY(-1px);
+}
+
+.button:active {
+  transform: translateY(0);
+}
+
+.button:focus-visible {
+  outline: 3px solid rgba(167, 139, 250, 0.38);
+  outline-offset: 2px;
+}
+
+.button:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+  transform: none;
+}
+
+.button-full {
+  width: 100%;
+  margin-top: 11px;
+}
+
+.button-primary {
+  color: #fff;
+  background: linear-gradient(135deg, #8b5cf6, #6d28d9);
+  box-shadow: 0 7px 16px rgba(109, 40, 217, 0.2);
+}
+
+.button-secondary {
+  flex: 0 0 auto;
+  color: var(--accent-strong);
+  background: var(--accent-soft);
+}
+
+.button-x {
+  color: #fff;
+  background: linear-gradient(135deg, #29252f, #09090b);
+  box-shadow: 0 7px 16px rgba(9, 9, 11, 0.18);
+}
+
+.button-ghost {
+  color: #fff;
+  border: 1px solid rgba(255, 255, 255, 0.24);
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.button-compact {
+  min-height: 28px;
+  padding: 5px 8px;
+  border-radius: 8px;
+  font-size: 10px;
+}
+
+button.template-variable {
+  min-height: 24px;
+  padding: 3px 7px;
+  border: 1px solid #d7c7ed;
+  border-radius: 999px;
+  cursor: pointer;
+  color: #654297;
+  background: #f3ecfc;
+  font-family: "Cascadia Code", Consolas, monospace;
+  font-size: 10px;
+  transition: border-color 0.16s ease, background 0.16s ease, transform 0.16s ease;
+}
+
+button.template-variable:hover {
+  border-color: #b89bdd;
+  background: #e9dcf8;
+  transform: translateY(-1px);
+}
+
+.category-picker {
+  position: relative;
+}
+
 .category-row {
   display: flex;
   align-items: center;
   gap: 8px;
 }
+
 .category-row input {
   flex: 1;
   min-width: 0;
 }
+
 #gameThumbnail {
-  flex-shrink: 0;
-  width: 60px;
-  height: 80px;
-  border-radius: 6px;
+  flex: 0 0 auto;
+  width: 42px;
+  height: 54px;
+  border-radius: 8px;
   object-fit: cover;
-  display: none;
 }
 
-/* サジェストリスト */
-.suggestions {
-  list-style: none;
-  margin: 4px 0 0 0;
-  padding: 0;
-  border: 1px solid #ddd;
-  border-radius: 6px;
-  max-height: 150px;
-  overflow-y: auto;
-  background: white;
+.suggestions,
+.tag-suggestions {
+  z-index: 30;
   display: none;
-  position: absolute;
-  z-index: 1000;
-  width: calc(100% - 20px);
+  overflow-y: auto;
+  width: 100%;
+  max-height: 190px;
+  margin: 6px 0 0;
+  padding: 5px;
+  border: 1px solid #ddd3e7;
+  border-radius: 12px;
+  background: #fff;
+  box-shadow: 0 14px 28px rgba(44, 28, 57, 0.14);
+  list-style: none;
 }
+
+.suggestions {
+  position: absolute;
+  top: calc(100% + 2px);
+  left: 0;
+}
+
+.tag-suggestions {
+  position: relative;
+}
+
 .suggestion-item {
   display: flex;
   align-items: center;
-  gap: 6px;
-  padding: 6px 8px;
+  gap: 9px;
+  min-height: 38px;
+  padding: 7px 8px;
+  border-radius: 8px;
   cursor: pointer;
-  transition: background-color 0.2s;
+  color: #3d3545;
+  transition: background 0.15s ease;
 }
+
 .suggestion-item:hover {
-  background-color: #f5f3ff; /* 淡い紫でhover */
+  background: #f4effa;
 }
+
 .suggestion-thumb {
-  width: 40px;
-  height: 50px;
-  object-fit: cover;
-  border-radius: 4px;
-}
-
-/* ? タグサジェスト */
-.tag-suggestions {
-  list-style: none;
-  margin: 4px 0 0 0;
-  padding: 0;
-  border: 1px solid #ddd;
+  width: 34px;
+  height: 43px;
   border-radius: 6px;
-  max-height: 150px;
-  overflow-y: auto;
-  background: white;
-  display: none;
-  width: 100%;
+  object-fit: cover;
 }
 
-/* ? 選択中カテゴリ（紫アクセントカード風） */
 #selectedCategory {
   display: none;
   align-items: center;
   gap: 10px;
-  background: #fff;
-  border: 2px solid #9146FF; /* Twitchカラーの枠 */
+  margin-top: 9px;
+  padding: 9px 10px;
+  border: 1px solid #d8c5ef;
   border-radius: 12px;
-  padding: 8px 12px;
-  font-weight: 500;
-  box-shadow: 0 2px 6px rgba(0,0,0,0.08);
-  transition: box-shadow 0.2s ease, border-color 0.2s ease;
+  color: #463650;
+  background: linear-gradient(135deg, #fbf9fd, #f2ebfb);
 }
-#selectedCategory:hover {
-  box-shadow: 0 4px 10px rgba(0,0,0,0.15);
-  border-color: #772ce8; /* hover時に濃い紫 */
+
+#selectedCategory.no-category-card {
+  color: var(--muted);
+  border-style: dashed;
+  background: #faf9fb;
 }
+
 #selectedCategory .selected-thumb {
-  width: 36px;
-  height: 36px;
-  border-radius: 8px;
+  width: 38px;
+  height: 48px;
+  border-radius: 7px;
   object-fit: cover;
+  box-shadow: 0 4px 10px rgba(40, 26, 51, 0.12);
 }
+
 #selectedCategory .selected-name {
-  flex: 1;
-  font-size: 14px;
   overflow: hidden;
+  flex: 1;
+  font-size: 12px;
+  font-weight: 750;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
+
 #selectedCategory .remove-btn {
-  margin-left: auto;
-  color: #888;
+  display: grid;
+  flex: 0 0 28px;
+  width: 28px;
+  height: 28px;
+  place-items: center;
+  padding: 0;
+  border-radius: 8px;
   cursor: pointer;
-  font-size: 16px;
-  transition: color 0.2s ease;
-}
-#selectedCategory .remove-btn:hover {
-  color: #e74c3c;
+  color: #8c7d96;
+  background: rgba(255, 255, 255, 0.72);
+  font-size: 17px;
+  line-height: 1;
 }
 
-/* タグ（Twitchカラー寄せチップ） */
-#tagSection {
-  display: none;
+#selectedCategory .remove-btn:hover {
+  color: var(--danger);
+  background: #fff;
 }
+
 #tagList {
   display: flex;
   flex-wrap: wrap;
-  gap: 8px;
-  margin: 6px 0;
-}
-.tag-item {
-  background-color: #ede9fe; /* 淡い紫背景 */
-  border-radius: 16px;
-  padding: 6px 12px;
-  display: flex;
-  align-items: center;
   gap: 6px;
-  font-size: 13px;
-  font-weight: 500;
-  color: #5b21b6; /* 濃い紫文字 */
-  box-shadow: 0 1px 2px rgba(0,0,0,0.1);
-  transition: background-color 0.2s ease, box-shadow 0.2s ease;
-}
-.tag-item:hover {
-  background-color: #ddd6fe; /* hoverで少し濃く */
-  box-shadow: 0 2px 4px rgba(0,0,0,0.15);
-}
-.tag-remove {
-  color: #7c3aed; /* デフォルトは紫 */
-  cursor: pointer;
-  font-size: 14px;
-  transition: color 0.2s ease;
-}
-.tag-remove:hover {
-  color: #e74c3c; /* hoverで赤 */
+  margin: 0 0 10px;
 }
 
-/* ✅ X投稿部分を縦並び */
+.tag-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 8px 5px 10px;
+  border: 1px solid #ded0ef;
+  border-radius: 999px;
+  color: #5b3884;
+  background: #f2ebfb;
+  font-size: 11px;
+  font-weight: 650;
+}
+
+.tag-remove {
+  display: inline-grid;
+  width: 16px;
+  height: 16px;
+  padding: 0;
+  place-items: center;
+  border: 0;
+  cursor: pointer;
+  color: #8e70ae;
+  background: transparent;
+  font-size: 14px;
+  line-height: 1;
+}
+
+.tag-remove:hover {
+  color: var(--danger);
+}
+
+.inline-control {
+  display: flex;
+  align-items: stretch;
+  gap: 7px;
+}
+
+.inline-control .control {
+  flex: 1;
+  min-width: 0;
+}
+
 .post-section {
   display: flex;
   flex-direction: column;
-  align-items: flex-start;
-  gap: 6px;
-}
-#customHashtags {
-  resize: vertical;
-  min-height: 60px;
-}
-#postToX {
-  background-color: #1DA1F2;
+  align-items: stretch;
 }
 
-/* ✅ トースト通知（右下固定・スライド） */
+.option-list {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+  margin-top: 10px;
+}
+
+.option-row {
+  display: flex;
+  min-height: 36px;
+  align-items: center;
+  gap: 9px;
+  padding: 8px 10px;
+  border: 1px solid #e8e2ed;
+  border-radius: 10px;
+  cursor: pointer;
+  color: #554c5e;
+  background: #faf9fb;
+  font-size: 11px;
+  font-weight: 650;
+  transition: border-color 0.16s ease, background 0.16s ease;
+}
+
+.option-row:hover {
+  border-color: #d7c7e3;
+  background: #fff;
+}
+
+.option-row input {
+  width: 16px;
+  height: 16px;
+  margin: 0;
+  accent-color: var(--accent);
+}
+
 .toast {
   visibility: hidden;
-  min-width: 220px;
-  background-color: #333;
-  color: #fff;
-  text-align: center;
-  border-radius: 6px;
-  padding: 10px 14px;
   position: fixed;
-  bottom: 20px;
-  right: 20px;
-  z-index: 1001;
+  right: 14px;
+  bottom: 14px;
+  left: 14px;
+  z-index: 100;
+  padding: 11px 13px;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: 12px;
+  color: #fff;
+  background: #332d38;
+  box-shadow: 0 12px 28px rgba(27, 20, 32, 0.24);
+  font-size: 11px;
+  line-height: 1.45;
   opacity: 0;
-  transition: opacity 0.3s ease, transform 0.3s ease;
-  transform: translateY(20px);
+  transform: translateY(10px);
+  transition: opacity 0.22s ease, transform 0.22s ease, visibility 0.22s;
 }
+
 .toast.show {
   visibility: visible;
-  opacity: 0.95;
+  opacity: 0.97;
   transform: translateY(0);
 }
+
 .toast.success {
-  background-color: #2ecc71;
+  background: #166534;
 }
+
 .toast.error {
-  background-color: #e74c3c;
+  background: #991b1b;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    scroll-behavior: auto !important;
+    transition-duration: 0.01ms !important;
+  }
 }
