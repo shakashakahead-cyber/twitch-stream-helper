@@ -26,7 +26,10 @@ function fixture(overrides = {}) {
 
 async function worker(state = fixture()) {
   const listeners = {};
-  const event = name => ({ addListener: callback => { listeners[name] = callback; } });
+  const event = name => ({ addListener: callback => {
+    const previous = listeners[name];
+    listeners[name] = previous ? (...args) => { previous(...args); return callback(...args); } : callback;
+  } });
   const chrome = {
     runtime: { onMessage: event("message"), onInstalled: event("installed"), onStartup: event("startup") },
     storage: { local: {
@@ -101,7 +104,7 @@ async function worker(state = fixture()) {
       throw new Error(`Unexpected endpoint: ${request.path}`);
     },
   });
-  const names = ["background.js", ...(await readdir(resolve(root, "src"))).filter(name => name.endsWith(".js")).map(name => `src/${name}`)];
+  const names = ["background.js", ...(await readdir(resolve(root, "src"), { recursive: true })).filter(name => name.endsWith(".js")).map(name => `src/${name}`)];
   const modules = new Map();
   for (const name of names) {
     let code = await readFile(resolve(root, name), "utf8");
@@ -116,6 +119,7 @@ async function worker(state = fixture()) {
   await entry.namespace.testQueue;
   return {
     state,
+    auth: modules.get(resolve(root, "src/auth.js")).namespace,
     async tick() {
       listeners.alarm({ name: "pinned-comment-stream-check" });
       await entry.namespace.testQueue;
@@ -142,6 +146,40 @@ async function worker(state = fixture()) {
 const posts = state => state.calls.filter(call => call.path === "/helix/chat/messages");
 const pins = state => state.calls.filter(call => call.path === "/helix/chat/pins");
 const delivery = state => state.storage.pinnedCommentDeliveries?.[recordKey];
+
+test("Analytics authorization is opt-in and preserves all existing scopes", async () => {
+  const state = fixture();
+  const w = await worker(state);
+  assert.equal((await w.auth.authenticate({ analytics: true })).success, true);
+  assert.deepEqual([...state.scopes].sort(), [...allScopes, "moderator:read:followers", "user:read:chat"].sort());
+  assert.equal(state.storage.analyticsSettings?.enabled, undefined, "auth alone must not silently enable collection");
+});
+
+test("denied Analytics scopes and disabled refresh respond once without enabling", async () => {
+  const state = fixture({ grantedScopes: [...allScopes] });
+  const w = await worker(state);
+  const result = await w.message("analyticsEnable");
+  assert.equal(result.success, false); assert.equal(result.requiresReauth, true);
+  assert.equal(state.storage.analyticsSettings?.enabled, undefined);
+  assert.equal((await w.message("analyticsRefresh")).success, false);
+  assert.equal((await w.message("analyticsDisable")).success, true);
+});
+
+test("validation uses actual expiry, is cached hourly and invalidation clears the token", async () => {
+  const state = fixture(); const w = await worker(state);
+  let validations = 0;
+  state.respond = request => {
+    if (request.path === "/oauth2/validate") {
+      validations++;
+      return validations < 3 ? Response.json({ client_id: state.clientId, user_id: state.userId, scopes: allScopes, expires_in: 7200 }) : new Response(null, { status: 401 });
+    }
+  };
+  await w.auth.getTokenAuthorization(); await w.auth.getTokenAuthorization();
+  assert.equal(validations, 1); assert.equal(state.storage.accessTokenExpiresAt, state.now + 7200000);
+  state.now += 3600001; await w.auth.getTokenAuthorization(); assert.equal(validations, 2);
+  state.now += 3600001; await assert.rejects(w.auth.getTokenAuthorization());
+  assert.equal(validations, 3); assert.equal(state.storage.accessToken, undefined);
+});
 
 test("offline → live posts and pins once; restart, concurrent checks, and manual click do not duplicate", async () => {
   const state = fixture();

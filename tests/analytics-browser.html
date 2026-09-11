@@ -1,0 +1,17 @@
+<!doctype html>
+<html lang="en">
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Analytics QA · synthetic data</title><link rel="stylesheet" href="../analytics.css"></head>
+<body>
+  <nav class="panel" style="margin:16px;font-size:13px">
+    QA ONLY · Synthetic data, isolated localhost IndexedDB, no Twitch requests.
+    <a href="?mode=tests" style="color:#c7b5ff">Integration tests</a> ·
+    <a href="?mode=demo&lang=ja" style="color:#c7b5ff">日本語 demo</a> ·
+    <a href="?mode=demo&lang=en" style="color:#c7b5ff">English demo</a> ·
+    <a href="?mode=empty&lang=ja" style="color:#c7b5ff">Empty state</a> ·
+    <a href="?mode=mobile&lang=ja" style="color:#c7b5ff">Mobile frame</a>
+  </nav>
+  <main id="analyticsApp"></main>
+  <pre id="testResults" style="white-space:pre-wrap;margin:32px;line-height:1.8"></pre>
+  <script type="module" src="analytics-browser.js"></script>
+</body>
+</html>

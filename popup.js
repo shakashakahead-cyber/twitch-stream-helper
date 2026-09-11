@@ -33,6 +33,9 @@ document.addEventListener("DOMContentLoaded", () => {
 });
 
 const loginBtn = document.getElementById("loginTwitch");
+document.getElementById("openAnalytics").addEventListener("click", () => {
+  chrome.tabs.create({ url: chrome.runtime.getURL("analytics.html") });
+});
 const logoutBtn = document.getElementById("logoutTwitch");
 const mainUI = document.getElementById("mainUI");
 const loggedOutState = document.getElementById("loggedOutState");

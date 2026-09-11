@@ -139,7 +139,9 @@
     "message": "$tagName$を削除",
     "description": "タグ削除ボタンの読み上げラベル",
     "placeholders": {
-      "tagName": { "content": "$1" }
+      "tagName": {
+        "content": "$1"
+      }
     }
   },
   "toastTitleUpdated": {
@@ -229,8 +231,12 @@
     "message": "Twitch APIエラー: $status$ $text$",
     "description": "Twitch APIからのエラー",
     "placeholders": {
-      "status": { "content": "$1" },
-      "text": { "content": "$2" }
+      "status": {
+        "content": "$1"
+      },
+      "text": {
+        "content": "$2"
+      }
     }
   },
   "errorTwitchRateLimited": {
@@ -261,7 +267,9 @@
     "message": "タグが見つかりません: $tagName$",
     "description": "タグ名からIDに変換できない場合のエラー",
     "placeholders": {
-      "tagName": { "content": "$1" }
+      "tagName": {
+        "content": "$1"
+      }
     }
   },
   "errorUnknownAction": {
@@ -398,8 +406,477 @@
     "message": "展開後のタイトルは$count$文字です。最大$max$文字まで設定できます。",
     "description": "展開後の配信タイトルがTwitchの上限を超えた場合のエラー",
     "placeholders": {
-      "count": { "content": "$1" },
-      "max": { "content": "$2" }
+      "count": {
+        "content": "$1"
+      },
+      "max": {
+        "content": "$2"
+      }
     }
+  },
+  "analyticsOpen": {
+    "message": "Analyticsを開く"
+  },
+  "analyticsTitle": {
+    "message": "配信の積み重ねを、成長に。"
+  },
+  "analyticsSubtitle": {
+    "message": "同接、コメント参加、再訪、フォローにつながる配信を見つけましょう。"
+  },
+  "analyticsEnable": {
+    "message": "Analyticsを有効化・認証"
+  },
+  "analyticsDisable": {
+    "message": "収集を停止"
+  },
+  "analyticsRefresh": {
+    "message": "Twitch履歴を同期"
+  },
+  "analyticsReload": {
+    "message": "表示を更新"
+  },
+  "analyticsEnabled": {
+    "message": "Chromeの起動中・スリープしていない間に収集"
+  },
+  "analyticsDisabled": {
+    "message": "収集は停止中です"
+  },
+  "analyticsAccount": {
+    "message": "ローカルデータのTwitchアカウント"
+  },
+  "analyticsPrivacy": {
+    "message": "データはこのPCのIndexedDBに保存します。コメント本文は保存しません。有効化時にチャット閲覧とフォロワー閲覧を追加認証します。Chrome終了・スリープ・ログアウト・接続障害中は欠損します。"
+  },
+  "analyticsPeriod": {
+    "message": "表示期間"
+  },
+  "analytics7": {
+    "message": "7日"
+  },
+  "analytics30": {
+    "message": "30日"
+  },
+  "analytics90": {
+    "message": "90日"
+  },
+  "analytics365": {
+    "message": "1年"
+  },
+  "analyticsAll": {
+    "message": "全期間"
+  },
+  "analyticsOverview": {
+    "message": "配信の成長"
+  },
+  "analyticsComparison": {
+    "message": "同じ長さの前期間と比較します。平均同接は実測配信の平均値の平均です。人数・件数は観測できた分のみで、同じコメント者を別配信でも数えます。"
+  },
+  "analyticsNoComparison": {
+    "message": "全期間の集計 · 前期間との比較なし"
+  },
+  "analyticsNoData": {
+    "message": "未計測"
+  },
+  "analyticsNoHistory": {
+    "message": "この期間の配信記録はありません。Analyticsを有効にすると取得可能なTwitchの過去VODを取り込みます。同接やコメントは今後の配信から計測します。"
+  },
+  "analyticsEmptyChart": {
+    "message": "この期間の計測データはありません"
+  },
+  "analyticsNextStream": {
+    "message": "同接は今後の配信で計測します。過去VODから同接やコメント者数は復元できません。"
+  },
+  "analyticsAvg": {
+    "message": "平均同接"
+  },
+  "analyticsPeak": {
+    "message": "最大同接"
+  },
+  "analyticsFirst": {
+    "message": "初コメント者"
+  },
+  "analyticsReturning": {
+    "message": "再訪コメント者"
+  },
+  "analyticsUnique": {
+    "message": "ユニークコメント者"
+  },
+  "analyticsFollows": {
+    "message": "計測した新規フォロー"
+  },
+  "analyticsFirstInfo": {
+    "message": "Stream Helperの計測開始後、配信中に初めてコメントしたユーザーです。視聴だけの人は判定できません。配信者本人とShared Chatの相手チャンネルからのコメントは除外します。"
+  },
+  "analyticsViewersChart": {
+    "message": "配信ごとの同接"
+  },
+  "analyticsFollowersChart": {
+    "message": "総フォロワー推移"
+  },
+  "analyticsFollowsChart": {
+    "message": "日別の新規フォロー（計測分）"
+  },
+  "analyticsChattersChart": {
+    "message": "コメント参加と再訪"
+  },
+  "analyticsActivityChart": {
+    "message": "月別配信時間"
+  },
+  "analyticsCountChart": {
+    "message": "月別配信回数"
+  },
+  "analyticsAcquisitionChart": {
+    "message": "現在のフォロワーの獲得時期"
+  },
+  "analyticsAcquisitionNote": {
+    "message": "同期完了時点の現在のフォロワーをfollowed_atで集計します。解除した人は含まれず、当時の新規フォロー総数ではありません。Twitchのページ取得中の増減で差が出る場合があります。"
+  },
+  "analyticsAsOf": {
+    "message": "最終同期完了"
+  },
+  "analyticsHours": {
+    "message": "時間"
+  },
+  "analyticsStreams": {
+    "message": "配信回数"
+  },
+  "analyticsCategorySection": {
+    "message": "カテゴリ別の成績"
+  },
+  "analyticsCategoryNote": {
+    "message": "計測配信の最初に観測したカテゴリで分類します。途中のカテゴリ変更も含む配信全体の成績であり、カテゴリ区間だけの成績ではありません。"
+  },
+  "analyticsCategory": {
+    "message": "カテゴリ"
+  },
+  "analyticsPeakMean": {
+    "message": "Peak平均"
+  },
+  "analyticsFirstPerStream": {
+    "message": "初コメント／配信"
+  },
+  "analyticsFollowPerStream": {
+    "message": "Follow／配信"
+  },
+  "analyticsLatest": {
+    "message": "最新配信のレポート"
+  },
+  "analyticsRecord": {
+    "message": "配信ごとの記録"
+  },
+  "analyticsRecordNavigation": {
+    "message": "表示する配信を切り替え"
+  },
+  "analyticsOlderStream": {
+    "message": "前の配信"
+  },
+  "analyticsNewerStream": {
+    "message": "次の配信"
+  },
+  "analyticsLatestStream": {
+    "message": "最新の配信へ"
+  },
+  "analyticsRecordPosition": {
+    "message": "$TOTAL$件中 $CURRENT$件目 · 保存済みの全配信",
+    "placeholders": {
+      "current": { "content": "$1" },
+      "total": { "content": "$2" }
+    }
+  },
+  "analyticsNoSavedStreams": {
+    "message": "保存済みの配信記録はありません。Analyticsを有効にすると、取得できるTwitch履歴と今後の配信がここに表示されます。"
+  },
+  "analyticsNoRecap": {
+    "message": "初めて計測した配信が終了すると、ここにレポートが表示されます。"
+  },
+  "analyticsGoodAvg": {
+    "message": "平均同接が過去配信の平均を上回りました。"
+  },
+  "analyticsGoodFirst": {
+    "message": "初コメント者が過去配信の平均を上回りました。"
+  },
+  "analyticsGoodFollow": {
+    "message": "計測した新規フォローが過去配信の平均を上回りました。"
+  },
+  "analyticsReference": {
+    "message": "同接サンプルに欠損があります。平均同接は参考値です。"
+  },
+  "analyticsEventWarning": {
+    "message": "イベント取得率が不足または不明です。コメント・Follow・Raidは観測できた分のみで、欠損期間を0件とは扱いません。"
+  },
+  "analyticsList": {
+    "message": "配信一覧"
+  },
+  "analyticsDate": {
+    "message": "日付"
+  },
+  "analyticsStreamTitle": {
+    "message": "タイトル"
+  },
+  "analyticsDuration": {
+    "message": "配信時間"
+  },
+  "analyticsSource": {
+    "message": "データソース"
+  },
+  "analyticsSourceBackfill": {
+    "message": "Twitch履歴"
+  },
+  "analyticsSourceMeasured": {
+    "message": "Stream Helper計測"
+  },
+  "analyticsCoverage": {
+    "message": "同接データ取得率"
+  },
+  "analyticsCoverageNormal": {
+    "message": "正常"
+  },
+  "analyticsCoveragePartial": {
+    "message": "一部欠損"
+  },
+  "analyticsCoverageReference": {
+    "message": "参考値"
+  },
+  "analyticsCoverageUnknown": {
+    "message": "不明"
+  },
+  "analyticsExportStreams": {
+    "message": "streams.csvを書き出す"
+  },
+  "analyticsExportSamples": {
+    "message": "viewer_samples.csvを書き出す"
+  },
+  "analyticsExportNote": {
+    "message": "選択期間のデータを書き出します。配信は開始日時、同接サンプルは取得日時で絞り込みます。未計測値は空欄となり、視聴者個人のIDは含みません。"
+  },
+  "analyticsDetail": {
+    "message": "配信詳細"
+  },
+  "analyticsClose": {
+    "message": "閉じる"
+  },
+  "analyticsLive": {
+    "message": "配信中"
+  },
+  "analyticsStart": {
+    "message": "開始日時"
+  },
+  "analyticsEnd": {
+    "message": "終了日時"
+  },
+  "analyticsEndObserved": {
+    "message": "終了時刻はオフラインを検出した時刻です。実際の終了は最後のライブ確認とオフライン確認の間で、配信時間と取得率は概算です。"
+  },
+  "analyticsEndUnknown": {
+    "message": "収集できない間に終了しました。一致するVODを取得できるまで、終了日時・配信時間・取得率は不明です。"
+  },
+  "analyticsBounds": {
+    "message": "最後のライブ確認 → 最初のオフライン確認"
+  },
+  "analyticsSamples": {
+    "message": "同接サンプル数"
+  },
+  "analyticsViewerDetail": {
+    "message": "この配信の同接推移"
+  },
+  "analyticsTitleHistory": {
+    "message": "タイトル履歴・自己評価"
+  },
+  "analyticsCategoryHistory": {
+    "message": "カテゴリ変更履歴"
+  },
+  "analyticsHistoryNote": {
+    "message": "履歴は観測時点からの記録です。VODタイトルはアーカイブのタイトルであり、配信中の全タイトル履歴ではありません。"
+  },
+  "analyticsRating": {
+    "message": "タイトル評価"
+  },
+  "analyticsUnrated": {
+    "message": "未評価"
+  },
+  "analyticsFavorite": {
+    "message": "気に入っている"
+  },
+  "analyticsNeutral": {
+    "message": "普通"
+  },
+  "analyticsWeak": {
+    "message": "微妙"
+  },
+  "analyticsNote": {
+    "message": "配信メモ"
+  },
+  "analyticsLabels": {
+    "message": "Analytics用ラベル（カンマ区切り）"
+  },
+  "analyticsLabelsInfo": {
+    "message": "Twitchタグとは別の、自分用の分析ラベルです。"
+  },
+  "analyticsSave": {
+    "message": "メモとラベルを保存"
+  },
+  "analyticsSaved": {
+    "message": "ローカルに保存しました"
+  },
+  "analyticsCompareTen": {
+    "message": "直前の計測済み・終了済み配信（最大10配信）との比較"
+  },
+  "analyticsPrevious": {
+    "message": "過去配信平均"
+  },
+  "analyticsThisStream": {
+    "message": "今回"
+  },
+  "analyticsChange": {
+    "message": "変化率"
+  },
+  "analyticsRaid": {
+    "message": "受け取ったRaid"
+  },
+  "analyticsRaidViewers": {
+    "message": "Raid合計人数"
+  },
+  "analyticsRaidFrom": {
+    "message": "Raid元"
+  },
+  "analyticsFollowerStart": {
+    "message": "開始確認時の総フォロワー"
+  },
+  "analyticsFollowerEnd": {
+    "message": "終了確認時の総フォロワー"
+  },
+  "analyticsEventCoverage": {
+    "message": "イベント取得率"
+  },
+  "analyticsChatCoverage": {
+    "message": "コメント"
+  },
+  "analyticsFollowCoverage": {
+    "message": "Follow"
+  },
+  "analyticsRaidCoverage": {
+    "message": "Raid"
+  },
+  "analyticsUpdateCoverage": {
+    "message": "タイトル・カテゴリ"
+  },
+  "analyticsDuring": {
+    "message": "配信中"
+  },
+  "analyticsOutside": {
+    "message": "配信外"
+  },
+  "analyticsUncertain": {
+    "message": "配信との関係が未確定"
+  },
+  "analyticsFollowNote": {
+    "message": "観測できたFollowのみを表示します。取得を確認できない日は空欄のままです。配信境界のFollowは、配信確認やVODで判定できるまで未確定として扱います。"
+  },
+  "analyticsBackfillVideos": {
+    "message": "Twitchの過去VODを取得中（自動で続行します）"
+  },
+  "analyticsBackfillFollowers": {
+    "message": "現在のフォロワーを取得中（自動で続行します）"
+  },
+  "analyticsBackfillComplete": {
+    "message": "取得可能なTwitch履歴をローカルに保存しました"
+  },
+  "analyticsBackfillPending": {
+    "message": "Analytics有効化後に履歴の取得を開始します"
+  },
+  "analyticsStatusConnected": {
+    "message": "EventSub接続中"
+  },
+  "analyticsStatusDisconnected": {
+    "message": "EventSub再接続待ち・コメント、Follow、Raidなどに欠損する可能性があります"
+  },
+  "analyticsLastPoll": {
+    "message": "配信チェックの最終成功"
+  },
+  "analyticsPollLive": {
+    "message": "その時点では配信中"
+  },
+  "analyticsPollOffline": {
+    "message": "その時点ではオフライン"
+  },
+  "analyticsPollPending": {
+    "message": "配信チェックの成功記録がまだありません"
+  },
+  "analyticsPollStale": {
+    "message": "配信チェックの成功を直近3分以内に確認できません。配信や同接が記録されない可能性があります。認証・通信状態を確認し、改善しなければ拡張機能を再読み込みしてください。"
+  },
+  "analyticsStatusError": {
+    "message": "一部のデータを取得できませんでした。次回以降の定期取得で再試行します。"
+  },
+  "analyticsStatusAuth": {
+    "message": "認証が必要です。「Analyticsを有効化・認証」から再認証してください。"
+  },
+  "analyticsStatusRate": {
+    "message": "Twitchの取得制限に達しました。待機してから収集を再開します。"
+  },
+  "analyticsFetchError": {
+    "message": "Twitchの分析データを取得できませんでした。"
+  },
+  "analyticsPermissions": {
+    "message": "Analyticsにはフォロワー閲覧とチャット閲覧の権限が必要です。再認証してください。"
+  },
+  "analyticsDbBlocked": {
+    "message": "ほかのAnalyticsタブを閉じて再読み込みし、ローカルDBを更新してください。"
+  },
+  "analyticsEnableFirst": {
+    "message": "先にAnalyticsを有効にしてください。"
+  },
+  "analyticsLocalError": {
+    "message": "ローカル操作に失敗しました。空き容量を確認してページを更新してください。"
+  },
+  "analyticsWorking": {
+    "message": "処理中…"
+  },
+  "analyticsUnknownCategory": {
+    "message": "記録なし"
+  },
+  "analyticsRetention": {
+    "message": "初コメント者の再訪"
+  },
+  "analyticsRetentionNote": {
+    "message": "選択期間に初コメントした人のうち、その後の記録済みの別配信でもコメントした人数です。集計期間後の再訪も含み、最近の初コメント者ほど再訪までの期間が短くなります。"
+  },
+  "analyticsBest": {
+    "message": "この期間の自己ベスト"
+  },
+  "analyticsBackfillMetrics": {
+    "message": "VOD情報のみ · 同接・イベントは未計測"
+  },
+  "analyticsSyncProgress": {
+    "message": "取得済み $COUNT$ 件 / 総数 約 $TOTAL$ 件",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      },
+      "total": {
+        "content": "$2"
+      }
+    }
+  },
+  "analyticsSyncStarted": {
+    "message": "同期開始"
+  },
+  "analyticsVideosSynced": {
+    "message": "VOD同期の最終完了"
+  },
+  "analyticsFollowersSynced": {
+    "message": "フォロワー同期の最終完了"
+  },
+  "analyticsVodDuration": {
+    "message": "VODの動画時間"
+  },
+  "analyticsVodTimingNote": {
+    "message": "動画時間と観測した配信時間は別の値です。VODは配信の一部のみの場合があります。"
+  },
+  "analyticsLegacyChatOrigin": {
+    "message": "この配信には共有チャットの除外対応前のコメント記録があります。当時は送信元を保存していないため、過去分を分離できません。"
+  },
+  "analyticsSnapshotTimes": {
+    "message": "フォロワー数の取得時刻（開始 / 終了）"
   }
 }

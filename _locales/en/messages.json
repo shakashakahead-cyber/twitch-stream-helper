@@ -139,7 +139,9 @@
     "message": "Remove $tagName$",
     "description": "Accessible label for a tag remove button.",
     "placeholders": {
-      "tagName": { "content": "$1" }
+      "tagName": {
+        "content": "$1"
+      }
     }
   },
   "toastTitleUpdated": {
@@ -408,8 +410,477 @@
     "message": "The expanded title is $count$ characters; the maximum is $max$.",
     "description": "Error when an expanded stream title exceeds the Twitch title limit.",
     "placeholders": {
-      "count": { "content": "$1" },
-      "max": { "content": "$2" }
+      "count": {
+        "content": "$1"
+      },
+      "max": {
+        "content": "$2"
+      }
     }
+  },
+  "analyticsOpen": {
+    "message": "Open Analytics"
+  },
+  "analyticsTitle": {
+    "message": "Your stream, over time"
+  },
+  "analyticsSubtitle": {
+    "message": "Understand what brings people in, gets them talking, and brings them back."
+  },
+  "analyticsEnable": {
+    "message": "Enable Analytics / authorize"
+  },
+  "analyticsDisable": {
+    "message": "Pause collection"
+  },
+  "analyticsRefresh": {
+    "message": "Sync Twitch history"
+  },
+  "analyticsReload": {
+    "message": "Refresh display"
+  },
+  "analyticsEnabled": {
+    "message": "Collecting while Chrome is awake"
+  },
+  "analyticsDisabled": {
+    "message": "Collection is paused"
+  },
+  "analyticsAccount": {
+    "message": "Local data for Twitch account"
+  },
+  "analyticsPrivacy": {
+    "message": "Stored on this computer in IndexedDB. Chat text is never saved. Enabling requests chat-read and follower-read access. Closing Chrome, sleep, logout, and connection failures leave gaps."
+  },
+  "analyticsPeriod": {
+    "message": "Period"
+  },
+  "analytics7": {
+    "message": "7 days"
+  },
+  "analytics30": {
+    "message": "30 days"
+  },
+  "analytics90": {
+    "message": "90 days"
+  },
+  "analytics365": {
+    "message": "1 year"
+  },
+  "analyticsAll": {
+    "message": "All time"
+  },
+  "analyticsOverview": {
+    "message": "Overview"
+  },
+  "analyticsComparison": {
+    "message": "Compared with the previous equal-length period. Average viewers is the mean of measured stream averages. Counts include observed events only; repeat commenters can appear in multiple streams."
+  },
+  "analyticsNoComparison": {
+    "message": "All time · no previous-period comparison"
+  },
+  "analyticsNoData": {
+    "message": "Not measured"
+  },
+  "analyticsNoHistory": {
+    "message": "No streams in this period. Enable Analytics to import available Twitch archives; viewer and chat metrics are collected from your next stream."
+  },
+  "analyticsEmptyChart": {
+    "message": "No measured values for this period"
+  },
+  "analyticsNextStream": {
+    "message": "Viewer metrics are collected during future streams. VODs cannot restore past viewers or chatters."
+  },
+  "analyticsAvg": {
+    "message": "Average viewers"
+  },
+  "analyticsPeak": {
+    "message": "Peak viewers"
+  },
+  "analyticsFirst": {
+    "message": "First-time commenters"
+  },
+  "analyticsReturning": {
+    "message": "Returning commenters"
+  },
+  "analyticsUnique": {
+    "message": "Unique commenters"
+  },
+  "analyticsFollows": {
+    "message": "New follows observed"
+  },
+  "analyticsFirstInfo": {
+    "message": "Users first observed commenting during a stream since Stream Helper measurement began. Silent viewers cannot be identified. Broadcasters and messages originating in other Shared Chat channels are excluded."
+  },
+  "analyticsViewersChart": {
+    "message": "Audience per stream"
+  },
+  "analyticsFollowersChart": {
+    "message": "Total followers"
+  },
+  "analyticsFollowsChart": {
+    "message": "Follows observed each day"
+  },
+  "analyticsChattersChart": {
+    "message": "People who joined the conversation"
+  },
+  "analyticsActivityChart": {
+    "message": "Monthly streaming hours"
+  },
+  "analyticsCountChart": {
+    "message": "Streams each month"
+  },
+  "analyticsAcquisitionChart": {
+    "message": "When current followers were acquired"
+  },
+  "analyticsAcquisitionNote": {
+    "message": "Current followers as of the completed sync, grouped by followed_at. People who unfollowed are absent; this is not historical new-follow totals. Pagination is not an atomic Twitch snapshot."
+  },
+  "analyticsAsOf": {
+    "message": "Last completed sync"
+  },
+  "analyticsHours": {
+    "message": "Hours"
+  },
+  "analyticsStreams": {
+    "message": "Streams"
+  },
+  "analyticsCategorySection": {
+    "message": "Performance by category"
+  },
+  "analyticsCategoryNote": {
+    "message": "Grouped by the first category observed in each measured stream. Whole-stream metrics include subsequent category changes; they do not measure an individual category segment."
+  },
+  "analyticsCategory": {
+    "message": "Category"
+  },
+  "analyticsPeakMean": {
+    "message": "Mean peak"
+  },
+  "analyticsFirstPerStream": {
+    "message": "First / stream"
+  },
+  "analyticsFollowPerStream": {
+    "message": "Follow / stream"
+  },
+  "analyticsLatest": {
+    "message": "Latest stream recap"
+  },
+  "analyticsRecord": {
+    "message": "Stream by stream"
+  },
+  "analyticsRecordNavigation": {
+    "message": "Choose a stream"
+  },
+  "analyticsOlderStream": {
+    "message": "Previous stream"
+  },
+  "analyticsNewerStream": {
+    "message": "Next stream"
+  },
+  "analyticsLatestStream": {
+    "message": "Back to latest"
+  },
+  "analyticsRecordPosition": {
+    "message": "$CURRENT$ of $TOTAL$ · All saved streams",
+    "placeholders": {
+      "current": { "content": "$1" },
+      "total": { "content": "$2" }
+    }
+  },
+  "analyticsNoSavedStreams": {
+    "message": "No streams saved yet. Enable Analytics to see available Twitch history and future streams here."
+  },
+  "analyticsNoRecap": {
+    "message": "Your first measured stream recap will appear here after it ends."
+  },
+  "analyticsGoodAvg": {
+    "message": "Average viewers exceeded the previous-stream average."
+  },
+  "analyticsGoodFirst": {
+    "message": "More first-time commenters than the previous-stream average."
+  },
+  "analyticsGoodFollow": {
+    "message": "More follows observed than the previous-stream average."
+  },
+  "analyticsReference": {
+    "message": "Viewer samples have gaps. Treat the average as a reference value."
+  },
+  "analyticsEventWarning": {
+    "message": "Event coverage is incomplete or unknown. Comment, follow, and raid counts are observed minimums; missing time is not zero."
+  },
+  "analyticsList": {
+    "message": "Stream history"
+  },
+  "analyticsDate": {
+    "message": "Date"
+  },
+  "analyticsStreamTitle": {
+    "message": "Title"
+  },
+  "analyticsDuration": {
+    "message": "Duration"
+  },
+  "analyticsSource": {
+    "message": "Source"
+  },
+  "analyticsSourceBackfill": {
+    "message": "Twitch history"
+  },
+  "analyticsSourceMeasured": {
+    "message": "Stream Helper measurement"
+  },
+  "analyticsCoverage": {
+    "message": "Viewer data coverage"
+  },
+  "analyticsCoverageNormal": {
+    "message": "Healthy"
+  },
+  "analyticsCoveragePartial": {
+    "message": "Some gaps"
+  },
+  "analyticsCoverageReference": {
+    "message": "Reference only"
+  },
+  "analyticsCoverageUnknown": {
+    "message": "Unknown"
+  },
+  "analyticsExportStreams": {
+    "message": "Export streams.csv"
+  },
+  "analyticsExportSamples": {
+    "message": "Export viewer_samples.csv"
+  },
+  "analyticsExportNote": {
+    "message": "Exports follow the selected period. Stream rows use start date; viewer samples use sample time. Missing values stay blank. No viewer identities are exported."
+  },
+  "analyticsDetail": {
+    "message": "Stream details"
+  },
+  "analyticsClose": {
+    "message": "Close"
+  },
+  "analyticsLive": {
+    "message": "Live"
+  },
+  "analyticsStart": {
+    "message": "Started"
+  },
+  "analyticsEnd": {
+    "message": "Ended"
+  },
+  "analyticsEndObserved": {
+    "message": "End time is the first offline poll, bounded by the last live check and the offline check. Duration and coverage are approximate."
+  },
+  "analyticsEndUnknown": {
+    "message": "The end occurred while collection was unavailable. End time, duration, and coverage remain unknown unless a matching archive becomes available."
+  },
+  "analyticsBounds": {
+    "message": "Last live check → first offline check"
+  },
+  "analyticsSamples": {
+    "message": "Viewer samples"
+  },
+  "analyticsViewerDetail": {
+    "message": "Audience during this stream"
+  },
+  "analyticsTitleHistory": {
+    "message": "Title history & self-rating"
+  },
+  "analyticsCategoryHistory": {
+    "message": "Category history"
+  },
+  "analyticsHistoryNote": {
+    "message": "History begins when observed. A VOD title is one archive title, not every title used during that stream."
+  },
+  "analyticsRating": {
+    "message": "Title rating"
+  },
+  "analyticsUnrated": {
+    "message": "Unrated"
+  },
+  "analyticsFavorite": {
+    "message": "Favorite"
+  },
+  "analyticsNeutral": {
+    "message": "Neutral"
+  },
+  "analyticsWeak": {
+    "message": "Weak"
+  },
+  "analyticsNote": {
+    "message": "Stream note"
+  },
+  "analyticsLabels": {
+    "message": "Analytics labels (comma separated)"
+  },
+  "analyticsLabelsInfo": {
+    "message": "Private labels for analysis, separate from Twitch tags."
+  },
+  "analyticsSave": {
+    "message": "Save note & labels"
+  },
+  "analyticsSaved": {
+    "message": "Saved locally"
+  },
+  "analyticsCompareTen": {
+    "message": "Compared with up to 10 preceding measured, completed streams"
+  },
+  "analyticsPrevious": {
+    "message": "Previous average"
+  },
+  "analyticsThisStream": {
+    "message": "This stream"
+  },
+  "analyticsChange": {
+    "message": "Change"
+  },
+  "analyticsRaid": {
+    "message": "Incoming raids"
+  },
+  "analyticsRaidViewers": {
+    "message": "Raid viewers"
+  },
+  "analyticsRaidFrom": {
+    "message": "From"
+  },
+  "analyticsFollowerStart": {
+    "message": "Followers at start observation"
+  },
+  "analyticsFollowerEnd": {
+    "message": "Followers at end observation"
+  },
+  "analyticsEventCoverage": {
+    "message": "Event coverage"
+  },
+  "analyticsChatCoverage": {
+    "message": "Chat"
+  },
+  "analyticsFollowCoverage": {
+    "message": "Follow"
+  },
+  "analyticsRaidCoverage": {
+    "message": "Raid"
+  },
+  "analyticsUpdateCoverage": {
+    "message": "Title / category"
+  },
+  "analyticsDuring": {
+    "message": "During stream"
+  },
+  "analyticsOutside": {
+    "message": "Outside stream"
+  },
+  "analyticsUncertain": {
+    "message": "Uncertain boundary"
+  },
+  "analyticsFollowNote": {
+    "message": "Observed follows only. Blank days have no confirmed coverage; lines and bars do not fill gaps. Boundary events remain uncertain until stream observations or an archive resolve them."
+  },
+  "analyticsBackfillVideos": {
+    "message": "Importing Twitch archives (resumes automatically)"
+  },
+  "analyticsBackfillFollowers": {
+    "message": "Importing current followers (resumes automatically)"
+  },
+  "analyticsBackfillComplete": {
+    "message": "Available Twitch history imported and kept locally"
+  },
+  "analyticsBackfillPending": {
+    "message": "History sync will start after enabling Analytics"
+  },
+  "analyticsStatusConnected": {
+    "message": "EventSub connected"
+  },
+  "analyticsStatusDisconnected": {
+    "message": "EventSub reconnect pending; chat, follow, raid and other events may be missing"
+  },
+  "analyticsLastPoll": {
+    "message": "Last successful stream check"
+  },
+  "analyticsPollLive": {
+    "message": "Live at that time"
+  },
+  "analyticsPollOffline": {
+    "message": "Offline at that time"
+  },
+  "analyticsPollPending": {
+    "message": "No successful stream check recorded yet"
+  },
+  "analyticsPollStale": {
+    "message": "No successful stream check within the last 3 minutes. Streams and viewer counts may not be recorded. Check authorization and connectivity; reload the extension if the problem continues."
+  },
+  "analyticsStatusError": {
+    "message": "Some data could not be collected. Collection will retry on a later poll."
+  },
+  "analyticsStatusAuth": {
+    "message": "Authorization required. Use Enable Analytics / authorize to sign in again."
+  },
+  "analyticsStatusRate": {
+    "message": "Twitch rate limit reached. Collection will wait before retrying."
+  },
+  "analyticsFetchError": {
+    "message": "Could not read Twitch analytics data."
+  },
+  "analyticsPermissions": {
+    "message": "Analytics needs follower-read and chat-read permission. Authorize Analytics again."
+  },
+  "analyticsDbBlocked": {
+    "message": "Close other Analytics tabs and reload to upgrade the local database."
+  },
+  "analyticsEnableFirst": {
+    "message": "Enable Analytics first."
+  },
+  "analyticsLocalError": {
+    "message": "The local operation failed. Check available disk space, then refresh this page."
+  },
+  "analyticsWorking": {
+    "message": "Working…"
+  },
+  "analyticsUnknownCategory": {
+    "message": "Not recorded"
+  },
+  "analyticsRetention": {
+    "message": "First commenters who returned"
+  },
+  "analyticsRetentionNote": {
+    "message": "Of the users first observed in the selected period, the number observed in another stream at any later recorded date. Recent cohorts have had less time to return."
+  },
+  "analyticsBest": {
+    "message": "Personal bests in this period"
+  },
+  "analyticsBackfillMetrics": {
+    "message": "Archive metadata only · audience and event metrics were not measured"
+  },
+  "analyticsSyncProgress": {
+    "message": "Fetched $COUNT$ items / approximately $TOTAL$ total",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      },
+      "total": {
+        "content": "$2"
+      }
+    }
+  },
+  "analyticsSyncStarted": {
+    "message": "Sync started"
+  },
+  "analyticsVideosSynced": {
+    "message": "Last completed VOD sync"
+  },
+  "analyticsFollowersSynced": {
+    "message": "Last completed follower sync"
+  },
+  "analyticsVodDuration": {
+    "message": "VOD recording length"
+  },
+  "analyticsVodTimingNote": {
+    "message": "Recording length is separate from the observed broadcast duration; a VOD may contain only part of a stream."
+  },
+  "analyticsLegacyChatOrigin": {
+    "message": "This stream includes comments recorded before Shared Chat filtering. Their original channels were not saved, so those comments cannot be separated retrospectively."
+  },
+  "analyticsSnapshotTimes": {
+    "message": "Follower totals observed at (start / end)"
   }
 }
