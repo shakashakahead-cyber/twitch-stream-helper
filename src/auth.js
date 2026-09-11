@@ -22,6 +22,10 @@ let tokenValidation = null;
 export const CHAT_SCOPE = "user:write:chat";
 export const PIN_SCOPE = "moderator:manage:chat_messages";
 const REQUIRED_SCOPES = Object.freeze(["channel:manage:broadcast", CHAT_SCOPE, PIN_SCOPE]);
+export const ANALYTICS_SCOPES = Object.freeze(["moderator:read:followers", "user:read:chat"]);
+export function hasAnalyticsScopes(authorization) {
+    return ANALYTICS_SCOPES.every(scope => authorization.scopes.includes(scope));
+}
 
 export function hasRequiredScopes(authorization) {
     return REQUIRED_SCOPES.every(scope => authorization.scopes.includes(scope));
@@ -73,6 +77,7 @@ export async function getTokenAuthorization() {
         return tokenValidation.info;
     }
     const response = await fetch("https://id.twitch.tv/oauth2/validate", {
+        signal: globalThis.AbortSignal?.timeout(20000),
         headers: { Authorization: `OAuth ${token}` },
     });
     if (response.status === 401) {
@@ -86,6 +91,10 @@ export async function getTokenAuthorization() {
         throw new Error(chrome.i18n.getMessage("errorLoginRequired"));
     }
     const info = { userId: data.user_id, scopes: Array.isArray(data.scopes) ? data.scopes : [] };
+    if (Number.isFinite(data.expires_in)) {
+        accessTokenExpiresAt = Date.now() + data.expires_in * 1000;
+        await writeLocal({ accessTokenExpiresAt });
+    }
     tokenValidation = { token, info, checkedAt: Date.now() };
     return info;
 }
@@ -146,7 +155,7 @@ export async function ensureAccessToken() {
 
 // ---- Auth Logic ----
 
-export async function authenticate() {
+export async function authenticate({ analytics = false } = {}) {
     const redirectUri = chrome.identity.getRedirectURL();
 
     if (CLIENT_ID === "YOUR_TWITCH_CLIENT_ID") {
@@ -155,13 +164,14 @@ export async function authenticate() {
 
     const state = crypto.randomUUID();
     await writeLocal({ oauth_state: state });
+    const scopes = analytics ? [...REQUIRED_SCOPES, ...ANALYTICS_SCOPES] : REQUIRED_SCOPES;
 
     const authUrl =
         `https://id.twitch.tv/oauth2/authorize` +
         `?client_id=${encodeURIComponent(CLIENT_ID)}` +
         `&redirect_uri=${encodeURIComponent(redirectUri)}` +
         `&response_type=token` +
-        `&scope=${encodeURIComponent(REQUIRED_SCOPES.join(" "))}` +
+        `&scope=${encodeURIComponent(scopes.join(" "))}` +
         `&force_verify=true` +
         `&state=${encodeURIComponent(state)}`;
 
@@ -207,6 +217,10 @@ export async function authenticate() {
                 const authorization = await getTokenAuthorization();
                 if (!hasRequiredScopes(authorization)) {
                     resolve({ success: false, requiresReauth: true, error: chrome.i18n.getMessage("errorCommentPermissions") });
+                    return;
+                }
+                if (analytics && !hasAnalyticsScopes(authorization)) {
+                    resolve({ success: false, requiresReauth: true, error: chrome.i18n.getMessage("analyticsPermissions") });
                     return;
                 }
                 resolve({ success: true });

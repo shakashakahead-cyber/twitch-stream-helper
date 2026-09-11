@@ -11,6 +11,7 @@ async function twitchApi(endpoint, method = "GET", body = null) {
 
     const doFetch = () => fetch(`https://api.twitch.tv/helix/${endpoint}`, {
         method,
+        signal: globalThis.AbortSignal?.timeout(20000),
         headers: {
             "Authorization": `Bearer ${getAccessToken()}`,
             "Client-Id": CLIENT_ID,
@@ -81,10 +82,41 @@ export async function updateChannelInfo(broadcasterId, data) {
     await twitchApi(`channels?broadcaster_id=${broadcasterId}`, "PATCH", data);
 }
 
+const pendingStreamReads = new Map();
 export async function getLiveStream(broadcasterId) {
-    const result = await twitchApi(`streams?user_id=${encodeURIComponent(broadcasterId)}`);
-    if (!Array.isArray(result.data)) throw new Error(chrome.i18n.getMessage("errorCommentStreamCheck"));
-    return result.data[0] || null;
+    if (!pendingStreamReads.has(broadcasterId)) {
+        const pending = twitchApi(`streams?user_id=${encodeURIComponent(broadcasterId)}`).then(result => {
+            if (!Array.isArray(result.data)) throw new Error(chrome.i18n.getMessage("errorCommentStreamCheck"));
+            return result.data[0] || null;
+        });
+        pendingStreamReads.set(broadcasterId, pending);
+    }
+    try { return await pendingStreamReads.get(broadcasterId); }
+    finally { pendingStreamReads.delete(broadcasterId); }
+}
+
+export async function getArchiveVideos(broadcasterId, after = "") {
+    const query = new URLSearchParams({ user_id: broadcasterId, type: "archive", first: "100" });
+    if (after) query.set("after", after);
+    const result = await twitchApi(`videos?${query}`);
+    if (!Array.isArray(result.data)) throw new Error(chrome.i18n.getMessage("analyticsFetchError"));
+    return result;
+}
+
+export async function getChannelFollowers(broadcasterId, after = "", first = 100) {
+    const query = new URLSearchParams({ broadcaster_id: broadcasterId, first: String(first) });
+    if (after) query.set("after", after);
+    const result = await twitchApi(`channels/followers?${query}`);
+    if (!Array.isArray(result.data) || !Number.isFinite(result.total)) {
+        throw new Error(chrome.i18n.getMessage("analyticsFetchError"));
+    }
+    return result;
+}
+
+export function createEventSubscription(type, version, condition, sessionId) {
+    return twitchApi("eventsub/subscriptions", "POST", {
+        type, version, condition, transport: { method: "websocket", session_id: sessionId },
+    });
 }
 
 export async function sendChatMessage(broadcasterId, message) {

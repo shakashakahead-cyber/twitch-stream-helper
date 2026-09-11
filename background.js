@@ -21,6 +21,13 @@ import {
   getCurrentChannelTagsFromTwitch, getChannelInfo, updateChannelInfo,
   getLiveStream, sendChatMessage, pinChatMessage
 } from "./src/api.js";
+import { hasAnalyticsScopes } from "./src/auth.js";
+import { requestBackfill } from "./src/analytics/backfill.js";
+import {
+  ANALYTICS_ALARM, initializeAnalytics, withAnalyticsLock, collectAnalytics,
+  analyticsSettings, enableAnalytics, stopAnalytics
+} from "./src/analytics/collector.js";
+import { openAnalyticsDB } from "./src/analytics/db.js";
 // Saved comments: polling, durable delivery records, and serialized writes.
 const COMMENT_ALARM = "pinned-comment-stream-check";
 let commentQueue = Promise.resolve();
@@ -187,6 +194,10 @@ function initializeCommentAlarm() {
   withCommentLock(syncCommentAlarm).catch(() => {});
 }
 chrome.alarms.onAlarm.addListener(alarm => {
+  if (alarm.name === ANALYTICS_ALARM) {
+    withAnalyticsLock(collectAnalytics).catch(() => {});
+    return;
+  }
   if (alarm.name !== COMMENT_ALARM) return;
   withCommentLock(async () => {
     try {
@@ -200,6 +211,9 @@ chrome.alarms.onAlarm.addListener(alarm => {
 chrome.runtime.onInstalled.addListener(initializeCommentAlarm);
 chrome.runtime.onStartup.addListener(initializeCommentAlarm);
 initializeCommentAlarm();
+chrome.runtime.onInstalled.addListener(initializeAnalytics);
+chrome.runtime.onStartup.addListener(initializeAnalytics);
+initializeAnalytics();
 
 async function refreshStreamState() {
   const user = await getUser();
@@ -244,11 +258,46 @@ async function expandTitleTemplate(template, partialState = {}) {
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   (async () => {
     try {
+      if (message.action === "analyticsEnable") {
+        const result = await withCommentLock(() => withAnalyticsLock(async () => {
+          let authorization;
+          try { authorization = await getTokenAuthorization(); } catch (_) { /* Offer interactive login below. */ }
+          if (!authorization || !hasAnalyticsScopes(authorization) || !hasRequiredScopes(authorization)) {
+            const result = await authenticate({ analytics: true });
+            if (!result.success) return result;
+            authorization = await getTokenAuthorization();
+          }
+          await enableAnalytics(authorization);
+          await syncCommentAlarm();
+          return { success: true };
+        }));
+        if (result.success) initializeAnalytics();
+        sendResponse(result);
+        return;
+      }
+      if (message.action === "analyticsDisable") {
+        await withAnalyticsLock(stopAnalytics);
+        sendResponse({ success: true });
+        return;
+      }
+      if (message.action === "analyticsRefresh") {
+        await withAnalyticsLock(async () => {
+          const settings = await analyticsSettings();
+          if (!settings.enabled || !settings.ownerId) throw new Error(chrome.i18n.getMessage("analyticsEnableFirst"));
+          const db = await openAnalyticsDB(settings.ownerId);
+          await requestBackfill(db, { followers: true });
+        });
+        initializeAnalytics();
+        sendResponse({ success: true });
+        return;
+      }
       // ------ 認証 ------
       if (message.action === "authenticate") {
         const result = await withCommentLock(async () => {
-          const result = await authenticate();
+          const settings = await analyticsSettings();
+          const result = await authenticate({ analytics: settings.enabled });
           await syncCommentAlarm();
+          initializeAnalytics();
           return result;
         });
         if (result.success) {
@@ -270,6 +319,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
       // ------ ログアウト ------
       else if (message.action === "logout") {
         await withCommentLock(async () => {
+          await withAnalyticsLock(stopAnalytics);
           await logout();
           const settings = await getPinnedCommentSettings();
           await writeLocal({ pinnedCommentSettings: { ...settings, autoPost: false } });

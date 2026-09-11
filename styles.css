@@ -93,6 +93,10 @@ button {
   padding-bottom: 14px;
 }
 
+.analytics-entry {
+  padding: 12px 16px 0;
+}
+
 .app-header {
   position: sticky;
   top: 0;
